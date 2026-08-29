@@ -1,0 +1,20 @@
+# Build output. The mods load their dll from bin\Debug\netstandard2.1\, which is where
+# metadata.json points, so a fresh clone has to be built once before the game can load it -
+# build.ps1 does that.
+bin/
+obj/
+
+# The game's own assemblies are referenced from a local install and are never copied here or
+# redistributed; this is only a guard against one arriving by accident.
+*.dll
+*.pdb
+!**/assets/*.dll
+
+# Editors
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+Puts a small toggle above each of your Q, W, E and R cells. While one is lit, that memory is cast for you the moment it comes off cooldown. This alters gameplay, so please do not bring it into games with people who did not ask for it.
+
+The toggles only answer the mouse while you hold the inspect key, so one cannot be hit by accident in a fight, and their states are saved between runs. Targets are picked with the game's own aim prediction, so projectiles lead a moving target rather than firing at where it used to be.
+
+[h2]Hold-to-charge memories[/h2]
+A memory that charges while you hold its key and fires on release cannot be automated — there is no key for the mod to let go of. Those turn grey and stop answering the mouse, so it is clear why nothing happens there.
+
+[h2]Settings[/h2]
+[list]
+[*]Which of Q, W, E and R get a toggle — hiding one also silences it
+[*]Only act while in combat
+[*]Whether to skip hold-to-charge memories
+[*]Minimum delay between casts
+[*]How long to ignore freshly spawned enemies
+[/list]

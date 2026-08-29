@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoCast", "AutoCast\AutoCast.csproj", "{F8D0BDD2-1720-4724-92CF-932E0B2FDB07}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoreGemSlots", "MoreGemSlots\MoreGemSlots.csproj", "{7FA15649-66A1-4911-840A-4C8BA6EDE558}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F8D0BDD2-1720-4724-92CF-932E0B2FDB07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8D0BDD2-1720-4724-92CF-932E0B2FDB07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8D0BDD2-1720-4724-92CF-932E0B2FDB07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8D0BDD2-1720-4724-92CF-932E0B2FDB07}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FA15649-66A1-4911-840A-4C8BA6EDE558}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FA15649-66A1-4911-840A-4C8BA6EDE558}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FA15649-66A1-4911-840A-4C8BA6EDE558}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FA15649-66A1-4911-840A-4C8BA6EDE558}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

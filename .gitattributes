@@ -1,0 +1,10 @@
+# Store text with LF and let Git hand out native endings on checkout. Without this, a clone on
+# another system shows every file as wholly changed the first time it is touched.
+* text=auto
+
+# Visual Studio rewrites these with CRLF whatever the repository says, so agree with it rather
+# than fight it every time the solution is opened.
+*.sln text eol=crlf
+
+# Artwork, and the sprites the mods embed. Never to be treated as text.
+*.png binary

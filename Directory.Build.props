@@ -1,0 +1,18 @@
+<Project>
+
+  <!--
+    These mods live outside the game folder, so the template's relative <GameDir>..\..</GameDir>
+    does not apply: every project needs an absolute path to the install, defined once here.
+    The game is then launched with  -moddir <this folder>  so it loads the mods from here.
+
+    The default is the usual Steam location. It is conditional so that an install somewhere else
+    needs no edit to a tracked file - set GameDir as an environment variable, or pass it on the
+    command line:
+
+        dotnet build -p:GameDir="D:\Games\Shape of Dreams"
+  -->
+  <PropertyGroup>
+    <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Shape of Dreams</GameDir>
+  </PropertyGroup>
+
+</Project>
