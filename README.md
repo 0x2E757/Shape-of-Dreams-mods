@@ -69,6 +69,31 @@ Launch Options:
 
 Then enable both mods in the in-game mod manager.
 
+## Publishing to the workshop
+
+The game does the uploading itself — `DewMod.CreateItem` / `UpdateItem` sit behind the mod
+manager, and they hand Steam `SteamUGC.SetItemTitle` from `metadata.name`, `SetItemDescription`
+from `description.txt`, `SetItemPreview` from `preview.png`, and `SetItemContent` **from the
+mod's whole folder**.
+
+That last one is why `publish.ps1` exists. Uploading the working copy would send `obj/` with it,
+and the NuGet files in there carry absolute paths of the form `C:\Users\<name>\.nuget\packages\` —
+an account name in a public item. So the script stages a copy in `dist/` holding only what the
+loader reads at runtime:
+
+```powershell
+.\publish.ps1
+.\launch.ps1 -ModDir .\dist
+```
+
+Five files per mod: `about/` and one Release assembly, with `metadata.json` rewritten to point at
+it. Sources and `assets/` are left out — the sprites are embedded in the dll, and the source is
+here.
+
+A **new** item is created private: `UpdateItem` calls `SetItemVisibility(handle, 2)` when
+`isNew`, and 2 is `Private`. It stays invisible until you publish it from its Steam page, and
+later updates leave the visibility alone.
+
 ## Art tooling
 
 `tools/` holds the two scripts that turn source artwork into what the mods ship. Neither runs at
