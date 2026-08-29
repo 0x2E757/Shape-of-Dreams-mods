@@ -94,6 +94,12 @@ A **new** item is created private: `UpdateItem` calls `SetItemVisibility(handle,
 `isNew`, and 2 is `Private`. It stays invisible until you publish it from its Steam page, and
 later updates leave the visibility alone.
 
+**Do not lose `about/publishedfileid.txt`.** A first upload asks Steam for an item id and writes
+it there, inside the folder that was published; every later upload reads it back and updates that
+item instead of creating another. Since the upload happens from `dist/`, that is where the file
+lands — so `publish.ps1` copies it back into the working copy before wiping `dist/`, and git keeps
+it from then on. Delete it and the next upload publishes a duplicate rather than an update.
+
 ## Art tooling
 
 `tools/` holds the two scripts that turn source artwork into what the mods ship. Neither runs at

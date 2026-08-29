@@ -20,6 +20,21 @@ $ErrorActionPreference = "Stop"
 & (Join-Path $PSScriptRoot "build.ps1") -Configuration Release
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
 
+# On a first upload the game asks Steam for a new item id and writes it to
+# about\publishedfileid.txt inside the folder it published; on later uploads it reads that file
+# back and updates the existing item instead of creating another one. That file therefore appears
+# in dist\ rather than here, and wiping dist\ would lose it - the next upload would then publish a
+# duplicate. So it is carried back into the working copy first, where it belongs and where git
+# keeps it.
+foreach ($mod in @("AutoCast", "MoreGemSlots")) {
+    $published = Join-Path $OutDir "$mod\about\publishedfileid.txt"
+    $keep = Join-Path $PSScriptRoot "$mod\about\publishedfileid.txt"
+    if ((Test-Path $published) -and -not (Test-Path $keep)) {
+        Copy-Item $published $keep
+        "$mod - kept workshop id $(Get-Content $published -Raw)"
+    }
+}
+
 if (Test-Path $OutDir) { Remove-Item $OutDir -Recurse -Force }
 
 foreach ($mod in @("AutoCast", "MoreGemSlots")) {
