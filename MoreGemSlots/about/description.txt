@@ -13,3 +13,6 @@ Essence slots stop being a flat three and start being something you earn. This a
 A fully levelled hero holding a fully levelled memory ends up with [b]7[/b] slots on it, which is the most the interface can show.
 
 Slots can be lost as well as gained. Swap a levelled memory for a fresh one and its extra slots go with it — the essences in them move to the nearest free slot on that memory, and if there is nowhere left they drop at your feet rather than vanishing into a slot nobody can reach.
+
+[h2]Source code[/h2]
+[url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]

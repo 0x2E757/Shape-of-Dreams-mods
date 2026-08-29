@@ -94,6 +94,20 @@ A **new** item is created private: `UpdateItem` calls `SetItemVisibility(handle,
 `isNew`, and 2 is `Private`. It stays invisible until you publish it from its Steam page, and
 later updates leave the visibility alone.
 
+**Descriptions.** The one the game shows is `about/description.txt`, and there is only ever one of
+it: `ModItem.description` is a single value and the mod format has no notion of language, so the
+in-game manager shows English whatever the player's language is. Steam does allow a description
+per language, but only through the item's page — the uploader sets just the one. The translations
+for pasting there live in `<mod>/workshop/`, deliberately outside `about/` so they are not
+uploaded as content nobody reads.
+
+`DewMod.ConvertBBToRichText` is what the game does with the markup, and it is worth knowing
+before writing any: `[url=address]text[/url]` keeps **only the text**, dropping the address, so a
+link written that way reads as a bare word in the manager. `[url]address[/url]` keeps the address,
+which Steam still renders as a link — that is the form to use. `[h1]`–`[h6]`, `[b]`, `[i]`, `[u]`,
+`[strike]` and `[spoiler]` come through; `[img]` and `[hr]` are dropped along with their contents,
+as is any tag it does not know; three or more blank lines collapse.
+
 **Do not lose `about/publishedfileid.txt`.** A first upload asks Steam for an item id and writes
 it there, inside the folder that was published; every later upload reads it back and updates that
 item instead of creating another. Since the upload happens from `dist/`, that is where the file

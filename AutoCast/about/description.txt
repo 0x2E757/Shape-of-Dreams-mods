@@ -13,3 +13,6 @@ A memory that charges while you hold its key and fires on release cannot be auto
 [*]Minimum delay between casts
 [*]How long to ignore freshly spawned enemies
 [/list]
+
+[h2]Source code[/h2]
+[url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]
