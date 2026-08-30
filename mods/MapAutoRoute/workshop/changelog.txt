@@ -1,3 +1,8 @@
+[h2]1.1[/h2]
+[list]
+[*]Fixed: travelling a route could spoil a location you returned to later, leaving every hero stuck in a room with no way out
+[/list]
+
 [h2]1.0[/h2]
 [list]
 [*]First release

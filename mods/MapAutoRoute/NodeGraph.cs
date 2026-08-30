@@ -31,7 +31,10 @@ namespace MapAutoRoute
 
         // A route may only pass *through* nodes the party has already stood on. The far end is
         // exempt on purpose: travelling to a revealed-but-unvisited node is the ordinary move, and
-        // routing to one is that same move with the rooms in between skipped.
+        // routing to one is that same move with the rooms in between skipped. A node already
+        // visited is a legitimate destination too - the game keeps a room's state per node and
+        // rebuilds it on the way back in, which is what `Room.isRevisit` is - so nothing here
+        // refuses one.
         //
         // Sidetrack nodes are excluded because the map does not draw them either - RefreshNodes
         // skips every node whose IsSidetrackNode() is true - and a node the player cannot see is

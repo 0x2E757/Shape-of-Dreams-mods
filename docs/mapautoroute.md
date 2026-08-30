@@ -51,9 +51,41 @@ node.status == WorldNodeStatus.HasVisited && !node.IsSidetrackNode()
 
 Two deliberate details. **The far end is exempt**: travelling to a revealed-but-unvisited node is
 the ordinary move, and routing to one is that move with the rooms in between skipped — refusing it
-would make the mod useless for the case it exists for. And **sidetrack nodes are excluded**, because
-the map does not draw them either: `RefreshNodes` skips every node whose `IsSidetrackNode()` is
-true, and a node the player cannot see is not one to route through.
+would make the mod useless for the case it exists for. Nor is a node the party has *already* been
+to refused, which is a second thing the exemption buys and a legitimate move in its own right: a
+shop found before there was gold to spend is a place to go back to, and the game supports arriving
+there ([the room a node remembers](#the-room-a-node-remembers)). And **sidetrack nodes are
+excluded**, because the map does not draw them either: `RefreshNodes` skips every node whose
+`IsSidetrackNode()` is true, and a node the player cannot see is not one to route through.
+
+### The room a node remembers
+
+A room is not rebuilt from scratch when the party comes back to it. `ZoneManager` keeps
+`visitedNodesSaveData`, one entry per node, and `LoadNode` writes and reads it around every travel:
+
+```csharp
+// leaving: the room being left is filed under the node being left
+DewPersistence.RoomData value = DewPersistence.SerializeRoomData();
+Room.instance.StopRoom();
+if (s.from >= 0) visitedNodesSaveData[s.from] = value;
+
+// arriving: whatever that node remembers is put back
+DewPersistence.RoomData saveData = (s.to >= 0) ? visitedNodesSaveData[s.to] : null;
+Room.instance.isRevisit = saveData != null;
+if (saveData != null) DewPersistence.ApplyRoomDataBeforeSpawnObjects(saveData, applyRoomDataSettings);
+```
+
+`Room.isRevisit` is the game's own word for it. Returning is a designed move, not a hole.
+
+**Which makes `s.from` load-bearing, and it comes from `currentNodeIndex`:**
+
+```csharp
+LoadNode(new LoadNodeSettings { from = currentNodeIndex, to = to, ... });
+```
+
+So anything that moves `currentNodeIndex` while the party is standing somewhere else files the room
+under the wrong node — see [the walk's own footnote](#the-rooms-in-between-are-walked-not-skipped),
+which is where this mod once got it wrong and what it cost.
 
 ## One idea: "adjacent" means more, briefly
 
@@ -143,6 +175,50 @@ with it.
 Three things that are *not* skipped, because the game does them itself when the last room loads:
 the sidetrack return index, the continue-save, and the room's own state. Only the crossing is
 simulated.
+
+### The walk has to put the index back, and this is the bug that cost a run
+
+The replay moves `currentNodeIndex` hop by hop, and it must: `AdvanceHunterTurn` reads
+`isCurrentNodeHunted` off it, which is what makes the hunt press as though the rooms were walked.
+But the method this is a prefix on then reads that same field as the node being *departed*:
+
+```csharp
+LoadNode(new LoadNodeSettings { from = currentNodeIndex, ... });   // and: visitedNodesSaveData[s.from] = <the room being left>
+```
+
+Left standing at the last hop, the replay hands the game a `from` the party was never in, and **the
+room they are actually standing in is filed under that node instead** ([the room a node
+remembers](#the-room-a-node-remembers)). Its own state is never written at all.
+
+Nothing goes wrong at the time, which is what made it expensive. It goes wrong however many rooms
+later the party walks back into the node whose entry was overwritten:
+`ApplyRoomDataBeforeSpawnObjects` restores another room's actors and `RoomSection`s onto this one,
+the objects it names are not here —
+
+```
+Could not find scene actor to load in: Shrine_Despair (3506921692993613591)
+Could not find scene object to load in: Sections/2 (dfeed1b8-74df-400e-b679-054e7e3e8c09)
+```
+
+— the sections carry the NavMesh, and every hero lands off it: `Failed to create agent because
+there is no valid NavMesh`, then `Entity seems to be stuck`, in a room with no way out. That state
+is then written to the continue save, so reloading comes back to the same room. In co-op the run is
+lost for everyone.
+
+So the loop ends by putting the index back to the node the party is really in:
+
+```csharp
+finally { __instance.SetCurrentNodeIndexAndRevealAdjacent(from); }
+```
+
+It costs nothing the walk did. That method only ever promotes `Unexplored` to `Revealed` and marks
+the node visited, so calling it on a node already stood in changes nothing, and the reveals made
+along the route stay. And `from` needs no relation to `to`: `TravelToNode` has no adjacency check
+of its own, which is exactly how the game's own sidetrack return reaches a node nowhere near.
+
+**A save damaged by the old behaviour is not repaired by the fix** — the wrong room is already
+filed. `DevTools` grew a *Forget that node's room* button for it, which clears one node's entry so
+that the room is built afresh instead of restored ([devtools.md](devtools.md)).
 
 ## A hunter in the way stops the route
 

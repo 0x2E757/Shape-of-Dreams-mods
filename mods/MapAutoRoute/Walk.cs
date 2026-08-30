@@ -87,23 +87,58 @@ namespace MapAutoRoute
             // whole route in a single turn and the map would reveal itself along with it.
             Widen.Close();
 
-            for (int i = 0; i < hops.Count - 1; i++)
+            try
             {
-                // A room with a hunter in it is not something to be simulated past. That is where
-                // the walk ends, and it ends there for real: the travel below is redirected to it,
-                // so the party arrives in that room and meets what is waiting.
-                if (Hunt.IsHunted(__instance, hops[i]))
+                for (int i = 0; i < hops.Count - 1; i++)
                 {
-                    Debug.Log($"[MapAutoRoute] caught at node {hops[i]} on the way to {__0}");
-                    __0 = hops[i];
-                    return;
+                    // A room with a hunter in it is not something to be simulated past. That is
+                    // where the walk ends, and it ends there for real: the travel below is
+                    // redirected to it, so the party arrives in that room and meets what is
+                    // waiting.
+                    if (Hunt.IsHunted(__instance, hops[i]))
+                    {
+                        Debug.Log($"[MapAutoRoute] caught at node {hops[i]} on the way to {__0}");
+                        __0 = hops[i];
+                        return;
+                    }
+
+                    Walk.StepOnto(__instance, hops[i]);
                 }
-
-                Walk.StepOnto(__instance, hops[i]);
             }
-
-            // Every room but the last has been crossed, so what the game is about to load is now
-            // genuinely one step away.
+            finally
+            {
+                // **Put the party back where it physically is, and this is the whole of the bug
+                // that cost a run.** The walk moves `currentNodeIndex` hop by hop, which is what
+                // makes the hunt press as though the rooms were walked - `AdvanceHunterTurn` reads
+                // `isCurrentNodeHunted` off it. But the method this is a prefix on then does:
+                //
+                //     LoadNode(new LoadNodeSettings { from = currentNodeIndex, to = to, ... })
+                //
+                // and `from` is the slot the room being left is saved into:
+                //
+                //     if (s.from >= 0) visitedNodesSaveData[s.from] = DewPersistence.SerializeRoomData();
+                //
+                // Left at the last hop, that writes the room the party is standing in over some
+                // other node's saved state and loses its own. Nothing goes wrong at the time. It
+                // goes wrong later, when the party walks back into the node whose slot was
+                // overwritten: `ApplyRoomDataBeforeSpawnObjects` restores another room's actors
+                // and `RoomSection`s onto this one, the objects it names are not there
+                // ("Could not find scene object to load in: Sections/1"), the geometry carrying
+                // the NavMesh goes missing with them, and every hero lands off the mesh in a room
+                // with no way out - which is then saved.
+                //
+                // Returning to a visited node is not the problem and never was: the game keeps a
+                // room per node and rebuilds it, which is what `Room.isRevisit` is for. So the
+                // index goes back to the node the party is really in, and the game records a
+                // truthful `from`.
+                //
+                // Restoring it costs nothing that the walk did. `SetCurrentNodeIndexAndRevealAdjacent`
+                // only ever promotes `Unexplored` to `Revealed` and marks the node visited, so
+                // calling it again on a node already stood in changes nothing; the reveals along
+                // the route stay. And `from` needs no relation to `to` - `TravelToNode` has no
+                // adjacency check of its own, which is how the game's own sidetrack return works.
+                __instance.SetCurrentNodeIndexAndRevealAdjacent(from);
+            }
         }
     }
 }
