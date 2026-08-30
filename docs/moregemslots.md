@@ -1,5 +1,10 @@
 # MoreGemSlots
 
+![Seven essence slots under a memory, drawn four over three](../images/moregemslots-hud.jpg)
+
+*Every slot the formula grants, drawn where the cell can hold it: four across, the rest on a
+second row beneath.*
+
 ## The slot formula
 
 ```
@@ -49,6 +54,11 @@ for (int i = 0; i < groups.Length; i++)
 
 The game ships layouts for 1 to 4 (confirmed in game). At 5 no index matches, every layout is
 switched off, and the slots disappear from the cell while still working underneath.
+
+![Essences heaped under the skill bar with no slots drawn](../images/moregemslots-hud-native.jpg)
+
+*The bug as the player meets it: the slot frames are gone from every cell, and the essences that
+are still equipped sit in a heap under the bar.*
 
 `GemLayoutPatch` is a Harmony prefix that replaces that method outright, for every count rather
 than only above the ceiling. It owns the HUD; where the slots go is `GemArrangement`'s, shared with
@@ -136,6 +146,11 @@ Turning the mod off while a run has more than four slots leaves those gems in th
 the slots until it is turned back on, because the stock method has no layout for them.
 
 ## The other two screens that draw slots
+
+![The Tab scoreboard with a slot row under each memory](../images/moregemslots-tab.jpg)
+
+*The scoreboard on Tab, laid out by the same code as the HUD and reading the same, on a row a
+fraction of the size.*
 
 The HUD is not the only place essence slots are drawn, and not the only place they stop being
 drawn. The scoreboard on Tab (`UI_InGame_Scoreboard_PlayerItem_Skill`) and the end-of-run result

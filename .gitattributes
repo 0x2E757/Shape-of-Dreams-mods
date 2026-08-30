@@ -8,3 +8,4 @@
 
 # Artwork, and the sprites the mods embed. Never to be treated as text.
 *.png binary
+*.jpg binary

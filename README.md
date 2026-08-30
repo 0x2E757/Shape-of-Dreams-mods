@@ -41,6 +41,7 @@ mods/                what -moddir points at
   Shared/            compiled into each mod, not shipped as a library
 tools/               build, launch, publish, and the two art scripts
 docs/                the notes listed below
+images/              screenshots, embedded in the docs
 dist/                publish.ps1 output; not committed
 ```
 

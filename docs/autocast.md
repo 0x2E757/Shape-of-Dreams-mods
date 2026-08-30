@@ -1,5 +1,9 @@
 # AutoCast
 
+![The toggles above the skill bar](../images/autocast-hud.jpg)
+
+*A toggle above each of the four cells. A lit one casts its memory the moment the cooldown ends.*
+
 ## On-screen controls
 
 **AutoCast** puts one control above each of the Q/W/E/R cells, found through
@@ -91,6 +95,10 @@ and the texture wants a mip chain: the icon draws at roughly a quarter of its st
 
 ### Tooltips
 
+![The tooltip of a lit toggle](../images/autocast-tooltip-on.jpg)
+
+*Each state names itself and says what it does, because an icon on the HUD has no room to.*
+
 `IShowTooltip` is the hover contract. Implement it and `UI_TooltipManager` finds the component
 under the cursor and calls `ShowTooltip(manager)`, from where
 `ShowTitleDescTooltip(settings, title, desc)` takes **raw strings** — so a mod can show text the
@@ -139,6 +147,11 @@ shrine uses. The values are Mirror SyncVars, so only the server writes them and 
 receive them automatically.
 
 ## Hold-to-charge skills
+
+![The tooltip of a toggle that cannot be switched on](../images/autocast-tooltip-hold.jpg)
+
+*A memory that charges while its key is held: the toggle is dead and the tooltip says why, rather
+than accepting a click that would do nothing.*
 
 Some memories charge while their button is held and fire on release. Autocast has no button to
 release, so it can only misfire them, and they are skipped.
