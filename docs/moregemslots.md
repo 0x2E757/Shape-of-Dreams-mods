@@ -201,15 +201,21 @@ Two smaller things:
   every widget under it at once — the same trick as `AddClones` in `GemLayoutPatch`, one level up.
 
 **All three screens share one arrangement**, in `GemArrangement`. They draw the same
-four-over-three grid from the same constants, so a memory with six slots reads the same on the HUD,
-on Tab and on the result screen. Laying the summary rows out on their own — which is what the first
-version did, a single row squeezed to fit — is what made them look like a different mod's work.
+four-over-three grid, so a memory with six slots reads the same on the HUD, on Tab and on the
+result screen. Laying the summary rows out on their own — which is what the first version did, a
+single row squeezed to fit — is what made them look like a different mod's work.
 
-The reason one set of constants can serve rows of wildly different sizes is that **every number in
+The reason one arrangement can serve rows of wildly different sizes is that **every number in
 `GemArrangement` is a multiple of the spacing measured off the authored row, never a distance**.
-`spread`, `drop`, `curve` and the row gap are all relative, so the arrangement dialled in against
-the HUD lands proportionally identical on a scoreboard entry a fraction of the size, with nothing
-to re-tune. That property was already there — it just had a second caller to prove it.
+`spread`, `drop`, `curve` and the row gap are all relative, so the shape dialled in against the HUD
+lands proportionally on a scoreboard entry a fraction of the size. That property was already there
+— it just had a second caller to prove it.
+
+Proportionally, though, is not identically, which is why there are two `Tuning` objects and not
+one: `Hud` and `Summary`, the same class with four of its twenty-one numbers changed — `rowGap`,
+`topSpread`, `bottomSpread` and `bottomCurve`. Those four were dialled in on the Tab screen with
+the DevTools panel until it read like the HUD beside it. The other seventeen are shared, which is
+what stops the screens drifting apart when one of them is next adjusted.
 
 `GemArrangement` knows nothing about gem slots. It takes the transforms of a row the game
 authored, measures it, and puts however many transforms it is given back onto it, which is what
