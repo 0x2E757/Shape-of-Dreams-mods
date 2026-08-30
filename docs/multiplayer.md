@@ -41,5 +41,10 @@ more than three — the same failure as the "slots vanish at 5+" bug in **Gettin
 slot ceiling** in [moregemslots.md](moregemslots.md). AutoCast is not required on both sides; it is input automation and works for
 whoever has it.
 
-All of the above is read off the code and the game's API. It has not been verified in a live
-two-client session — the one piece that only exercises there is the guest's `CmdCast` path.
+Most of the above is read off the code and the game's API rather than watched happening. Two
+pieces only exercise in a live two-client session: AutoCast's guest `CmdCast` path, still
+unverified, and MapAutoRoute's vote — which has now been seen, since a travel vote needs more than
+one player to happen at all (`ShouldVoteOnTravel` is `gamePlayers.Count(...) > 1`). A vote was
+started for a node three rooms out and the route drew, which means the server accepted the widened
+command and the panel painted; see the screenshot in [mapautoroute.md](mapautoroute.md). What that
+does not show is the *other* player's screen, which is the half still taken on trust.

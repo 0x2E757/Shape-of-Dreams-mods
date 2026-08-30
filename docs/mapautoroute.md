@@ -189,12 +189,23 @@ both things it has to say:
 | The route under the pointer | Hovering any node a route could reach | Blue, `#8ab4ff` |
 | The route a vote is about | `isVoting && voteType == NextNode`, and the voted node is not adjacent | Red, the material as authored |
 
+![A travel vote, with the route drawn red across three rooms](../images/mapautoroute-vote.jpg)
+
+*A vote to travel three rooms out, which the stock game could not have offered and could not have
+drawn: its line is the single edge between the party and the voted node, and there is not one. The
+route stands in for it, in the material's own red.*
+
 **The two colours say different things.** A route under the pointer is the mod's own answer to a
 question the player is still asking. A route under a vote is the game's line — the party is
 deciding where to go, which is the game's own moment — so `matTravel` is used exactly as authored
 and the mod only extends it along the rooms in between. Nothing is written to `Graphic.color`
 there either: `UpdateStatus` has already set it, white or the tint between two hunted nodes, and
 that is the colour it should have.
+
+The panel a vote puts on screen is a second `UI_InGame_WorldMap`, not the full-screen one, and it
+gets the route as well — the painting patch is on the edge rather than on the map, so it applies
+wherever an edge is drawn. Only the "you can travel here" marker is restricted to the main map,
+since `isMiniMapVariant` items have no room for it.
 
 Getting the blue took asking the running game a question.
 
@@ -339,6 +350,9 @@ are phrased so the number lands after a fixed genitive plural, which agrees with
   that has not been looked at. Confirming on a distant node should route the same way a click does.
 - **A guest with an unmodded host gets silence.** The click does nothing and says nothing, where the
   game would at least have refused visibly. A message would be better manners.
-- **Time under a real run.** Sidetracks, the dream-again loop, and co-op are the three places to
-  look first. The co-op reasoning in [multiplayer.md](multiplayer.md) is read off the API rather
-  than watched happening.
+- **A second player's screen.** The vote above proves the co-op path as far as one machine can:
+  a vote needs more than one player to happen at all, the server accepted the widened command, and
+  the route drew. Whether the *other* client draws the same one is the claim in
+  [multiplayer.md](multiplayer.md) that is still taken on trust — it follows from every input being
+  synced and the search being deterministic, but it has not been watched.
+- **Time under a real run.** Sidetracks and the dream-again loop are the two places left to look.
