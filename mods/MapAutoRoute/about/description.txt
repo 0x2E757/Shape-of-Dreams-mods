@@ -1,0 +1,22 @@
+Click a location you cannot reach in one step and the party goes there, walking back through rooms you have already cleared. The map draws the way, says how many turns it takes, and warns you when the hunt could reach you first.
+
+Only the last room is loaded. The ones in between are crossed rather than replayed - which costs exactly what walking them would have cost, a turn of the hunt each.
+
+[h2]What the map shows[/h2]
+[list]
+[*]Hover any location a route can reach and the way there is drawn in the same line the game uses when a party votes on where to travel
+[*]The tooltip reads [b](Travel in 3 turns)[/b], so the cost is on screen before you commit
+[*][b](Travel in 3 turns, may be caught by hunters)[/b] when the hunt could reach the route while you are still walking it
+[*][b](Auto route prevented by Hunters)[/b] when the hunt is sitting on the only way there
+[/list]
+
+[h2]Hunters[/h2]
+A route never walks through a room a hunter is standing in - it goes around, or it is refused. What it cannot rule out is the hunt moving while you do: every room you cross is a turn, and a room that was clear when you set off can be taken before you reach it. If that happens the walk stops there and you arrive in that room, rather than being carried past it.
+
+Travelling [i]into[/i] a hunted location is still allowed. That is an ordinary move the game already warns you about, and it is not this mod's place to overrule it.
+
+[h2]In co-op[/h2]
+Everyone running the mod sees the same route drawn, including under a travel vote - it is worked out on each machine from state the game already syncs, not sent by anyone. [b]The host needs the mod too[/b]: the server checks the same thing the map does, and without it there the click simply does nothing.
+
+[h2]Source code[/h2]
+[url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]

@@ -21,10 +21,10 @@ $ErrorActionPreference = "Stop"
 $repo = Split-Path $PSScriptRoot -Parent
 
 # Named rather than discovered, because the list of mods and the list of things to publish are not
-# the same list: DevTools is a testing tool for the other two and has no business on the workshop.
+# the same list: DevTools is a testing tool for the others and has no business on the workshop.
 # build.ps1 and launch.ps1 do discover, which is right for them - it is meant to be built and run,
 # just not shipped.
-$publish = @("AutoCast", "MoreGemSlots")
+$publish = @("AutoCast", "MoreGemSlots", "MapAutoRoute")
 
 & (Join-Path $PSScriptRoot "build.ps1") -Configuration Release
 if ($LASTEXITCODE -ne 0) { throw "build failed" }

@@ -1,6 +1,6 @@
 # Multiplayer
 
-Both published mods work in co-op, and are built along the boundary the game already draws.
+All three published mods work in co-op, and are built along the boundary the game already draws.
 
 Nothing gates a modded session. `DewMod.isGameplayAltered` feeds exactly one thing — a lobby
 attribute named `isModded` — so a lobby is *labelled* as modded, not closed. The authors' code of
@@ -20,6 +20,20 @@ settings are read by code that never runs on a guest, so changing them appears t
 hero and nobody else's, and it casts the way the game does: straight through when
 `hero.isServer`, and through `EntityControl.CmdCast` otherwise. No client-side authority is
 assumed anywhere.
+
+**MapAutoRoute needs the host, and only the host decides.** The client's own adjacency check is
+widened locally, which gets the command sent; the server checks the same thing again in
+`UserCode_CmdTravelToNode` and, without the mod there, refuses it silently — the click does
+nothing and says nothing. Everything the travel then does is server-side: crossing the rooms in
+between, one turn of the hunt each.
+
+Drawing is the other half and is per-client. Every copy of the mod works the route out for itself
+from state the game already syncs — `isVoting`, `voteType`, `voteData`, `currentNodeIndex`, the
+node list and the distance matrix are all in `ZoneManager.SerializeSyncVars` or are `SyncList`s —
+so the route is recomputed rather than sent, and two players running the mod see the same line
+without the mod exchanging a byte. **A player without the mod sees no line at all** under a vote
+for a distant node: the game's own vote line is the single edge between the party and the voted
+node, and when they are not adjacent there is no such edge to paint.
 
 **Who needs to install what.** MoreGemSlots is required on both sides: the host decides the slot
 counts, but *drawing* them is a local UI patch, and without it a guest's interface cannot render

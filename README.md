@@ -6,14 +6,15 @@ Mods for Shape of Dreams `r.1.3.1.3_s`, built against the game's own assemblies.
 | --- | --- | --- |
 | `AutoCast` | published | A toggle above each skill cell; while it is lit, that memory is cast as soon as it leaves cooldown. |
 | `MoreGemSlots` | published | Essence slots are earned from hero level and memory level, up to seven, and three screens are extended to draw them. |
-| `DevTools` | no | An overlay for testing the other two: hero level, spawning memories and essences, ending a run, and live tuning of the slot arrangement. |
+| `MapAutoRoute` | ready | A location you cannot reach in one step can be travelled to anyway: the party walks back through cleared rooms, a turn of the hunt each. |
+| `DevTools` | no | An overlay for testing the others: hero level, spawning memories and essences, ending a run, and live tuning of the slot arrangement. |
 
 ## Quick start
 
 ```powershell
 .\tools\build.ps1     # Debug; -Configuration Release for the other
 .\tools\launch.ps1    # runs the game with -moddir pointed at mods\
-.\tools\publish.ps1   # stages the two published mods into dist\
+.\tools\publish.ps1   # stages the three published mods into dist\
 ```
 
 Then enable the mods in the in-game mod manager. The player log is at
@@ -37,6 +38,7 @@ runs at build time; the results are committed.
 mods/                what -moddir points at
   AutoCast/          published
   MoreGemSlots/      published
+  MapAutoRoute/      ready to publish
   DevTools/          not published
   Shared/            compiled into each mod, not shipped as a library
 tools/               build, launch, publish, and the two art scripts
@@ -62,18 +64,19 @@ matching code.
 | [building.md](docs/building.md) | Building, running, publishing to the workshop, art tooling |
 | [autocast.md](docs/autocast.md) | HUD controls, icons, tooltips, hold-to-charge skills, what resets a toggle |
 | [moregemslots.md](docs/moregemslots.md) | The slot formula, losing slots, and getting past the four-slot drawing ceiling on three screens |
-| [devtools.md](docs/devtools.md) | The testing overlay, and the live tuning panel for the slot arrangement |
+| [mapautoroute.md](docs/mapautoroute.md) | The node graph, widening what counts as adjacent, and drawing a route with the map's own line |
+| [devtools.md](docs/devtools.md) | The testing overlay, god mode, and the live tuning panel for the slot arrangement |
 | [game-ui.md](docs/game-ui.md) | Reusable ground: shared widgets, localization, the mod config window |
-| [multiplayer.md](docs/multiplayer.md) | How both published mods behave in co-op, and who needs to install what |
+| [multiplayer.md](docs/multiplayer.md) | How the published mods behave in co-op, and who needs to install what |
 | [changelog-format.md](docs/changelog-format.md) | **Follow exactly when releasing.** The changelog template, and the order to do a release in |
 
 A few things that save time and are easy to miss:
 
-- **Both published mods use Harmony**, `MoreGemSlots` heavily. It passes
+- **Every published mod uses Harmony**, `MoreGemSlots` heavily. It passes
   `harmony.UnpatchAll(harmony.Id)`, because the stock template's bare `UnpatchAll()` removes every
   patch in the process, including other mods'.
 - **`Shared/` is source-linked into each mod**, not shipped as a library: a shared assembly would
-  have to travel with both, and a library published as its own mod would be a dependency the
+  have to travel with each of them, and a library published as its own mod would be a dependency the
   workshop cannot guarantee is enabled.
 - **`publish.ps1` names what it stages** rather than discovering it, so `DevTools` is never
   uploaded, and it stages into `dist/` rather than publishing the working copy — the game uploads a
