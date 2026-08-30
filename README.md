@@ -4,10 +4,14 @@ Mods for Shape of Dreams `r.1.3.1.3_s`, built against the game's own assemblies.
 
 | Mod | Workshop | What it does |
 | --- | --- | --- |
-| `AutoCast` | published | A toggle above each skill cell; while it is lit, that memory is cast as soon as it leaves cooldown. |
-| `MoreGemSlots` | published | Essence slots are earned from hero level and memory level, up to seven, and three screens are extended to draw them. |
-| `MapAutoRoute` | ready | A location you cannot reach in one step can be travelled to anyway: the party walks back through cleared rooms, a turn of the hunt each. |
-| `DevTools` | no | An overlay for testing the others: hero level, spawning memories and essences, ending a run, and live tuning of the slot arrangement. |
+| `AutoCast` | yes | A toggle above each skill cell; while it is lit, that memory is cast as soon as it leaves cooldown. |
+| `MoreGemSlots` | yes | Essence slots are earned from hero level and memory level, up to seven, and three screens are extended to draw them. |
+| `MapAutoRoute` | yes | A location you cannot reach in one step can be travelled to anyway: the party walks back through cleared rooms, a turn of the hunt each. |
+| `DevTools` | no | An overlay for testing the others: hero level, god mode, spawning memories and essences, ending a run, and live tuning of the slot arrangement. |
+
+*Workshop* is whether a mod is meant to go up at all, not whether it is up today — the column is
+the list in `publish.ps1`, and a version that has shipped is a question for that mod's
+`workshop/changelog.txt`.
 
 ## Quick start
 
@@ -36,10 +40,10 @@ runs at build time; the results are committed.
 
 ```
 mods/                what -moddir points at
-  AutoCast/          published
-  MoreGemSlots/      published
-  MapAutoRoute/      ready to publish
-  DevTools/          not published
+  AutoCast/          workshop
+  MoreGemSlots/      workshop
+  MapAutoRoute/      workshop
+  DevTools/          local only; the testing tool for the other three
   Shared/            compiled into each mod, not shipped as a library
 tools/               build, launch, publish, and the two art scripts
 docs/                the notes listed below

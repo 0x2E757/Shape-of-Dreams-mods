@@ -9,8 +9,8 @@ the party walks it: every room in between counts as a turn, and only the last on
 *The whole mod in one frame: a node three rooms out, the way there through ground already cleared,
 and the price of it before the click rather than after.*
 
-Status: **ready to publish, not yet uploaded.** `1.0` in `about/metadata.json`, art and changelog in
-place, named in `publish.ps1`. What is still open is at the bottom.
+What is still open is at the bottom. Which version is out is `workshop/changelog.txt`, and nothing
+here restates it — a status line in a document is a thing that goes stale quietly.
 
 **It has no settings**, and that is a decision rather than an omission: the only one it ever had was
 an on-off switch, which is what the mod list already is. `ModBehaviour` finds configs by reflection
