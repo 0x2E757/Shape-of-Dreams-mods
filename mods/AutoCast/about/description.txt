@@ -1,6 +1,11 @@
 Puts a small toggle above each of your Q, W, E and R cells. While one is lit, that memory is cast for you the moment it comes off cooldown. This alters gameplay, so please do not bring it into games with people who did not ask for it.
 
-The toggles only answer the mouse while you hold the inspect key, so one cannot be hit by accident in a fight, and their states are saved between runs. Targets are picked with the game's own aim prediction, so projectiles lead a moving target rather than firing at where it used to be.
+The toggles only answer the mouse while you hold the inspect key, so one cannot be hit by accident in a fight. Targets are picked with the game's own aim prediction, so projectiles lead a moving target rather than firing at where it used to be.
+
+[h2]What stays switched on[/h2]
+Autocast belongs to the memory rather than to the slot. Carry a memory to another cell and its toggle travels with it; swap two memories and both settings swap too. A memory that was not on your bar a moment ago arrives switched off, so something just picked up never starts casting on its own.
+
+Starting a new game clears all four. Resuming a saved run does not — it comes back exactly as you left it.
 
 [h2]Hold-to-charge memories[/h2]
 A memory that charges while you hold its key and fires on release cannot be automated — there is no key for the mod to let go of. Those turn grey and stop answering the mouse, so it is clear why nothing happens there.

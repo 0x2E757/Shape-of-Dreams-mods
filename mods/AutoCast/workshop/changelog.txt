@@ -1,0 +1,12 @@
+[h2]1.1[/h2]
+[list]
+[*]Autocast now belongs to the memory rather than to the cell: carry a memory to another cell and its toggle travels with it, and swapping two memories swaps both settings
+[*]A memory that was not on your bar a moment ago arrives switched off, so something just picked up never starts casting on its own
+[*]Starting a new game clears all four toggles
+[*]Fixed: resuming a saved run cleared the toggles as though it were a new game
+[/list]
+
+[h2]1.0[/h2]
+[list]
+[*]First release
+[/list]

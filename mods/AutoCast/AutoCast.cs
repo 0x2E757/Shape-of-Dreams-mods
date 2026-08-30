@@ -50,6 +50,14 @@ namespace AutoCast
         [HideInInspector] public bool castE = false;
         [HideInInspector] public bool castR = false;
 
+        // The new game those four belong to, so that a hero rebuilt inside the same run - a mod
+        // reload, most often - is not mistaken for a fresh start and does not clear them again.
+        // Only new games have an id at all; see TrackRun.
+        //
+        // It has to live in the save file rather than in a field: recognising the run in a later
+        // session is the point, and a field would have forgotten by then.
+        [HideInInspector] public string lastRunId = "";
+
         private const float LabelWidth = 260f;
         private const float InputWidth = 120f;
 
@@ -106,6 +114,21 @@ namespace AutoCast
         private int _index;
         private float _lastCastTime;
 
+        // The bar as it was last looked at, so that a memory arriving in a slot can be traced to
+        // wherever it came from. Parallel to Slots. `_seen` is separate from a null check because
+        // a destroyed trigger also reads as null, and "the slot was emptied" and "this slot has
+        // never been looked at" have to stay distinguishable.
+        private readonly SkillTrigger[] _equipped = new SkillTrigger[Slots.Length];
+        private readonly bool[] _seen = new bool[Slots.Length];
+
+        // Scratch for one pass of TrackEquipped, kept as fields so that watching the bar every
+        // frame allocates nothing.
+        private readonly SkillTrigger[] _current = new SkillTrigger[Slots.Length];
+        private readonly bool[] _wasOn = new bool[Slots.Length];
+
+        // The hero this file last saw. A different one means a run has begun; see TrackRun.
+        private Hero _lastHero;
+
         private readonly List<SlotToggle> _toggles = new List<SlotToggle>();
 
         private sealed class SlotToggle
@@ -141,9 +164,13 @@ namespace AutoCast
             if (config == null) return;
 
             var player = DewPlayer.local;
-            if (player == null) return;
+            var hero = player != null ? player.hero : null;
 
-            var hero = player.hero;
+            // Before the gameplay gates below, all of which have frames where they return early -
+            // a new run is entered dead, and memories are swapped out of combat.
+            TrackRun(hero);
+            TrackEquipped(hero);
+
             if (EntityCheck.IsNullInactiveDeadOrKnockedOut(hero)) return;
             if (config.onlyInCombat && !hero.isInCombat) return;
 
@@ -166,6 +193,195 @@ namespace AutoCast
                 _lastCastTime = Time.time;
                 return;
             }
+        }
+
+        // ----- resetting ------------------------------------------------------------
+
+        // A new game starts with nothing automated. Resuming one does not.
+        //
+        // GameManager.runId marks the boundary but does not answer the question. It looks like a
+        // run's identity and is not one: a resumed run comes back with a *different* id every
+        // time it is loaded, which the player log settles - three consecutive sessions of one
+        // continue save, three different ids. So it is used here only as an edge, for "a run just
+        // started", and something else has to say which kind.
+        //
+        // That something is DewNetworkStartSettings.continueData, which is what GameManager reads
+        // to make the same decision: set when the run came off a save, and cleared only when the
+        // network manager is destroyed, so it stays readable for the whole run rather than for
+        // the frame it was consumed in.
+        //
+        // A guest has no continueData of its own, so joining a host's run reads as new and starts
+        // clean. For someone dropping into somebody else's game that is the right answer anyway.
+        // The edge is **a hero this file has not seen before**, not a change of run id. The id is
+        // no good as an edge because a resumed run never gets one: GameManager.OnStartServer
+        // assigns a fresh guid *only* in the branch it takes when the run did not come off a save,
+        // so a resumed run leaves it empty. Watching the id therefore misses exactly the case that
+        // matters - and worse, misses it silently, leaving the previous run's skill bar on file for
+        // TrackEquipped to read as four replaced memories.
+        //
+        // An empty id is thus not "no information". It is the mark of a resumed run, and is used
+        // as one below, alongside the continue data itself.
+        private void TrackRun(Hero hero)
+        {
+            if (hero == null || hero == _lastHero) return;
+            _lastHero = hero;
+
+            // A new hero means a new bar, whichever kind of start this is: every trigger on it is
+            // a new object, and the records from the last one would read as replacements.
+            ForgetBar();
+
+            var game = GameManager.softInstance;
+            string runId = game != null ? game.runId : null;
+
+            var settings = DewNetworkManager.startSettings;
+            bool fromSave = settings != null && settings.continueData != null;
+            bool resumed = fromSave || string.IsNullOrEmpty(runId);
+
+            // Logged with both signals in it. Three readings of this boundary have been wrong, and
+            // each cost a round trip to work out which one - a line that carries its own evidence
+            // is cheaper than another investigation.
+            string why = $"runId='{runId}' fromSave={fromSave}";
+
+            if (resumed)
+            {
+                Debug.Log($"[AutoCast] resumed run ({why}), autocast kept");
+                return;
+            }
+
+            if (runId == config.lastRunId)
+            {
+                // A run already accounted for - the mod was reloaded mid-run, or the hero was
+                // rebuilt within it. The bar has been forgotten, which is all that was needed.
+                Debug.Log($"[AutoCast] same run ({why}), autocast kept");
+                return;
+            }
+
+            config.lastRunId = runId;
+
+            // Directly rather than through SetOn, which saves on every write; one save covers the
+            // four of them and the id together.
+            config.castQ = false;
+            config.castW = false;
+            config.castE = false;
+            config.castR = false;
+
+            SaveConfigsToDisk();
+            Debug.Log($"[AutoCast] new run ({why}), autocast cleared");
+        }
+
+        // Forget what was on the skill bar, so that whatever turns up next counts as a first
+        // sighting and keeps the setting stored for its slot rather than being read as a swap.
+        private void ForgetBar()
+        {
+            for (int i = 0; i < _seen.Length; i++)
+            {
+                _equipped[i] = null;
+                _seen[i] = false;
+            }
+        }
+
+        // Autocast belongs to the memory rather than to the slot it sits in. A memory carried from
+        // one slot to another takes its setting along; a memory that was not on the bar a moment
+        // ago arrives switched off, whatever the slot it lands in was doing.
+        //
+        // So each slot is answered by asking where its memory just came from, and that question is
+        // put to the *previous* bar for every slot before any of them is written back. Resolving
+        // them one at a time would let the first write become the second one's answer - two
+        // memories trading places would then both end up with whichever state was read first.
+        //
+        // An empty slot is passed over rather than treated as a change. A slot is momentarily
+        // empty while a memory is being moved, and on a zone change the whole hero is gone for a
+        // few frames; the control is hidden while a slot is empty anyway, and a memory put back
+        // later is supposed to bring its setting with it.
+        private void TrackEquipped(Hero hero)
+        {
+            var skill = hero != null ? hero.Skill : null;
+            if (skill == null) return;
+
+            bool changed = false;
+            for (int i = 0; i < Slots.Length; i++)
+            {
+                var equipped = skill.GetSkill(Slots[i]);
+                _current[i] = ActorCheck.IsNullOrInactive(equipped) ? null : equipped;
+                if (_current[i] != null && (!_seen[i] || _equipped[i] != _current[i])) changed = true;
+            }
+
+            if (!changed) return;
+
+            // Read every state before writing any of them, for the reason in the comment above.
+            for (int i = 0; i < Slots.Length; i++) _wasOn[i] = IsOn(Slots[i]);
+
+            bool wrote = false;
+            for (int i = 0; i < Slots.Length; i++)
+            {
+                var equipped = _current[i];
+                if (equipped == null) continue;
+                if (_seen[i] && _equipped[i] == equipped) continue;
+
+                int from = PreviousSlotOf(equipped);
+
+                // A slot being looked at for the first time keeps what was saved for it: that is
+                // the frame the mod loads on, and the frame a continued run comes up on, and in
+                // both the stored setting already belongs to the memory that is there.
+                bool on = from >= 0 ? _wasOn[from]
+                        : _seen[i] ? false
+                        : _wasOn[i];
+
+                wrote |= Assign(Slots[i], on);
+            }
+
+            wrote |= Commit();
+
+            // One save for the whole pass rather than one per slot, since a move writes two.
+            if (wrote) SaveConfigsToDisk();
+        }
+
+        // Which slot held this memory a moment ago, or -1 if it was not on the bar at all.
+        private int PreviousSlotOf(SkillTrigger skill)
+        {
+            for (int i = 0; i < Slots.Length; i++)
+                if (_seen[i] && _equipped[i] == skill) return i;
+            return -1;
+        }
+
+        // Returns whether it switched anything off.
+        private bool Commit()
+        {
+            bool wrote = false;
+            for (int i = 0; i < Slots.Length; i++)
+            {
+                if (_current[i] != null)
+                {
+                    _equipped[i] = _current[i];
+                    _seen[i] = true;
+                    continue;
+                }
+
+                // An emptied slot goes on remembering what was in it, which is what lets a memory
+                // dropped and picked up again arrive with its setting intact.
+                //
+                // Unless that memory has turned up in another slot. Then it lives there and took
+                // its setting with it, so this slot is left holding neither - and the setting has
+                // to go, or the next memory dropped in here would inherit it.
+                if (_seen[i] && IsOnBar(_equipped[i]))
+                {
+                    _equipped[i] = null;
+                    wrote |= Assign(Slots[i], false);
+                }
+
+                // _seen stays true either way. Clearing it would make the next memory to arrive
+                // look like the first one this slot has ever held, which is the one case that is
+                // allowed to keep a setting it did not earn.
+            }
+            return wrote;
+        }
+
+        private bool IsOnBar(SkillTrigger skill)
+        {
+            if (skill == null) return false;
+            for (int i = 0; i < Slots.Length; i++)
+                if (_current[i] == skill) return true;
+            return false;
         }
 
         // ----- autocast -------------------------------------------------------------
@@ -204,7 +420,14 @@ namespace AutoCast
 
         private void SetOn(HeroSkillLocation slot, bool value)
         {
-            if (IsOn(slot) == value) return;
+            if (Assign(slot, value)) SaveConfigsToDisk();
+        }
+
+        // The write on its own, so that a pass changing several slots can save once at the end
+        // rather than once per slot. Returns whether anything actually moved.
+        private bool Assign(HeroSkillLocation slot, bool value)
+        {
+            if (IsOn(slot) == value) return false;
 
             switch (slot)
             {
@@ -212,8 +435,9 @@ namespace AutoCast
                 case HeroSkillLocation.W: config.castW = value; break;
                 case HeroSkillLocation.E: config.castE = value; break;
                 case HeroSkillLocation.R: config.castR = value; break;
+                default: return false;
             }
-            SaveConfigsToDisk();
+            return true;
         }
 
         private bool TryCast(Hero hero, SkillTrigger skill)
