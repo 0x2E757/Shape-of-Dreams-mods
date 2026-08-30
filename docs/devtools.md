@@ -36,7 +36,37 @@ way round precisely because they are published.
 | Spawn random memory | A real loot-pool roll at that level |
 | Spawn random essence | The same, at that quality |
 | Knock out hero | `Entity.Kill()`, and the run it ends awards 0 mastery points |
+| Room node | Which node the button below acts on; stepping it names the room under it |
+| Forget that node's room | Clears one node's remembered room — see below |
 | Gem tuning | opens the section below |
+
+## Forgetting a node's room
+
+A repair tool rather than a testing one, and the only control here that writes to a live run's save
+rather than to the world in front of you.
+
+`ZoneManager.visitedNodesSaveData` holds one entry per node — the room's actors and its
+`RoomSection` objects — and `LoadNode` files the room being left under `s.from`, which is taken
+from `currentNodeIndex`. So anything that moves that index while the party is standing somewhere
+else files a room under the wrong node. **MapAutoRoute's route replay did exactly that** until
+1.1 taught it to put the index back ([mapautoroute.md](mapautoroute.md)).
+
+Nothing shows at the time. It shows when the party returns to the mis-filed node:
+`ApplyRoomDataBeforeSpawnObjects` restores another room's objects onto this one, the sections it
+names are not there, the NavMesh goes with them, and every hero lands somewhere they cannot walk
+out of — which is then saved over the run.
+
+The button clears the entry, so the node is built afresh on the way in instead of restored. That is
+the honest repair rather than the clever one: **the right contents are not recoverable**, because
+they were never written anywhere, so the choice is between a room that rebuilds and a room that
+strands the party. A rebuilt room comes back in its first-visit state, rewards included, which is a
+real cost and the reason no published mod does this.
+
+Stepping *Room node* reports what is under the index — the room name, and `- remembered` when that
+node holds an entry at all — because an index on its own is unusable. The current node is refused:
+the room the party is in is written out again the moment they leave, so clearing it would look like
+it had worked and would not have. Host only, and unlike the other actions it does not need a live
+hero: a save is worth repairing from the map screen whatever state the party is in.
 
 ## God mode
 

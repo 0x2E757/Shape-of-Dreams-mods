@@ -49,6 +49,7 @@ namespace DevTools
         private TextMeshProUGUI _titleText;
         private TextMeshProUGUI _heroLevelText;
         private TextMeshProUGUI _itemLevelText;
+        private TextMeshProUGUI _roomNodeText;
         private TextMeshProUGUI _statusText;
         private Button[] _actionButtons;
         private Button _godButton;
@@ -119,6 +120,7 @@ namespace DevTools
 
             _heroLevelText = NumberRow(_box, "Hero level", HeroLevelDelta);
             _itemLevelText = NumberRow(_box, "Item level", ItemLevelDelta);
+            _roomNodeText = NumberRow(_box, "Room node", RoomNodeDelta);
 
             // Left interactable whatever the hero is doing, unlike the buttons below it: it is a
             // switch rather than an action, and setting it before a run starts so that the run
@@ -131,6 +133,8 @@ namespace DevTools
                 ActionButton(_box, "Spawn random memory", () => DevActions.SpawnMemory(_config.itemLevel)),
                 ActionButton(_box, "Spawn random essence", () => DevActions.SpawnEssence(_config.itemLevel)),
                 ActionButton(_box, "Knock out hero", DevActions.KillHero),
+                ActionButton(_box, "Forget that node's room",
+                             () => DevActions.ClearRoomSaveData(_config.roomNode)),
             };
 
             _tuningButton = ActionButton(_box, "", ToggleTuning);
@@ -473,6 +477,36 @@ namespace DevTools
             _save?.Invoke();
         }
 
+        // Steps by one rather than by Step, unlike the two rows above it. A node index is not a
+        // magnitude - the difference between node 16 and node 17 is the whole point - so the row
+        // counts rather than scales.
+        private void RoomNodeDelta(int delta)
+        {
+            var zone = ZoneManager.softInstance;
+            int last = zone != null ? Mathf.Max(0, zone.nodes.Count - 1) : 0;
+
+            int wanted = Mathf.Clamp(_config.roomNode + Math.Sign(delta), 0, last);
+            if (wanted == _config.roomNode) return;
+
+            _config.roomNode = wanted;
+            _save?.Invoke();
+
+            // The index alone is unusable - nobody knows which number the shop was. So stepping
+            // the row says what is under it, which is also the only way to tell a node that holds
+            // a remembered room from one that does not.
+            _status = zone == null
+                    ? wanted.ToString()
+                    : wanted + " " + NodeCaption(zone, wanted);
+        }
+
+        private static string NodeCaption(ZoneManager zone, int node)
+        {
+            string room = zone.nodes[node].room;
+            if (string.IsNullOrEmpty(room)) room = "(unexplored)";
+
+            return room + (zone.visitedNodesSaveData[node] != null ? " - remembered" : "");
+        }
+
         // ----- per frame ------------------------------------------------------------
 
         private void Update()
@@ -487,6 +521,7 @@ namespace DevTools
                                 ? DevActions.HeroLevel + "/" + DevActions.HeroMaxLevel
                                 : "-";
             _itemLevelText.text = _config.itemLevel.ToString();
+            _roomNodeText.text = _config.roomNode.ToString();
 
             // Every frame, because a room load replaces the hero and takes the granted bonus with
             // it. Asking for the state that is wanted rather than for a change is what makes that

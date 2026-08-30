@@ -123,6 +123,50 @@ namespace DevTools
             return Dew.GetGoodRewardPosition(LocalHero.agentPosition, SpawnSpread);
         }
 
+        // ----- a node's saved room -------------------------------------------------
+
+        // Forget what a node's room looked like, so that walking back into it builds the room
+        // afresh instead of restoring a remembered one.
+        //
+        // This is a repair tool, and it exists because a save can end up holding *another* room's
+        // state under a node. `ZoneManager.LoadNode` saves the room being left into
+        // `visitedNodesSaveData[s.from]`, with `s.from` taken from `currentNodeIndex` - so
+        // anything that moves that index while the party is standing somewhere else files the
+        // room under the wrong node. MapAutoRoute's route replay did exactly that until it
+        // learned to put the index back (see Walk.cs). The damage is silent until the party
+        // returns to the mis-filed node: `ApplyRoomDataBeforeSpawnObjects` then looks for actors
+        // and `RoomSection`s that this room does not have, the missing sections take the NavMesh
+        // with them, and the heroes land somewhere they cannot walk out of.
+        //
+        // Clearing the slot is the honest repair rather than the clever one. The right contents
+        // are not recoverable - they were never written anywhere - so the choice is between a
+        // room that rebuilds from scratch and a room that strands the party. A rebuilt room comes
+        // back with its first-visit state, which for a cleared room means its rewards are there
+        // again; that is a real cost and the reason this is not something the published mods do.
+        //
+        // Server only, and deliberately not gated on a live hero the way the others are: a save
+        // is worth repairing from the map screen, with everyone dead or otherwise.
+        public static string ClearRoomSaveData(int node)
+        {
+            if (!NetworkServer.active) return "host only - the server owns the save data";
+
+            var zone = ZoneManager.softInstance;
+            if (zone == null) return "no zone manager";
+            if (node < 0 || node >= zone.visitedNodesSaveData.Count) return "no node " + node;
+
+            if (node == zone.currentNodeIndex)
+            {
+                // The room the party is standing in is written out again the moment they leave,
+                // so clearing it now achieves nothing and reads as though it did.
+                return "node " + node + " is the one you are in - leave it first";
+            }
+
+            if (zone.visitedNodesSaveData[node] == null) return "node " + node + " already has none";
+
+            zone.visitedNodesSaveData[node] = null;
+            return "node " + node + " (" + zone.nodes[node].room + ") will be built afresh";
+        }
+
         // ----- ending the run -------------------------------------------------------
 
         // A hero is knocked out rather than removed, and GameManager.CheckGameOver concludes the

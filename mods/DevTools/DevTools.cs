@@ -57,6 +57,10 @@ namespace DevTools
         [HideInInspector] public bool panelOpen = true;
         [HideInInspector] public int itemLevel = 1;
 
+        // Which node the room-state repair acts on. Kept with the rest of the panel state so that
+        // a number dialled in before opening the map is still there afterwards.
+        [HideInInspector] public int roomNode;
+
         // Kept with the other panel state rather than offered as a setting, for the same reason:
         // the panel is the interface. It does persist, so a session that ended with it on starts
         // with it on - which is the right way round for something turned on to get through a map
