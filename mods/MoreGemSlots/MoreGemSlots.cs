@@ -83,6 +83,10 @@ namespace MoreGemSlots
             LoadConfigsToDisk();
             harmony.PatchAll();
             Widgets.Install();
+
+            // DevTools drives the arrangement numbers from an on-screen panel; this is what makes
+            // a change to one show up without waiting for a slot count to change.
+            GemArrangement.Changed += Redraw;
             Debug.Log("[MoreGemSlots] loaded: " + mod.metadata.id);
         }
 
@@ -90,13 +94,22 @@ namespace MoreGemSlots
         {
             // Pass the id. The template's bare UnpatchAll() removes every patch from every mod in
             // the game, not just this one.
+            GemArrangement.Changed -= Redraw;
+
             harmony.UnpatchAll(harmony.Id);
             GemLayoutPatch.Reset();
+            GemRow.Reset();
 
             // DewGUI.fieldBuilders is shared with the game and every other mod, so the entry has
             // to come back out.
             Widgets.Remove();
             Debug.Log("[MoreGemSlots] unloaded: " + mod.metadata.id);
+        }
+
+        private static void Redraw()
+        {
+            GemLayoutPatch.Invalidate();
+            GemRow.Invalidate();
         }
 
         private void Update()

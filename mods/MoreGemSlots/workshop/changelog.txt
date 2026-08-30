@@ -1,0 +1,10 @@
+[h2]1.1[/h2]
+[list]
+[*]Essence slots are now drawn on the scoreboard opened with Tab, and on the result screen at the end of a run — both previously showed nothing at all once a memory had more than four
+[*]All three screens now arrange the slots the same way, so a memory with six of them looks the same wherever you see it
+[/list]
+
+[h2]1.0[/h2]
+[list]
+[*]First release
+[/list]
