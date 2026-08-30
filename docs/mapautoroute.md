@@ -4,6 +4,11 @@ Hover a node the party cannot reach in one step and the map draws the way there 
 already cleared, how many turns it takes, and whether the hunt could reach it first. Click it and
 the party walks it: every room in between counts as a turn, and only the last one is loaded.
 
+![A route drawn across three rooms, with the tooltip giving its cost](../images/mapautoroute-route.jpg)
+
+*The whole mod in one frame: a node three rooms out, the way there through ground already cleared,
+and the price of it before the click rather than after.*
+
 Status: **ready to publish, not yet uploaded.** `1.0` in `about/metadata.json`, art and changelog in
 place, named in `publish.ps1`. What is still open is at the bottom.
 
@@ -141,6 +146,11 @@ simulated.
 
 ## A hunter in the way stops the route
 
+![The map with most of it under the hunt, and the route refused](../images/mapautoroute-route-blocked.jpg)
+
+*Red is the hunt. There is a way to that node and the mod will not take it, which is a different
+statement from "too far" and says so — under the game's own warning about where the pointer is.*
+
 `hunterStatuses` is one status per node, and the values are not consecutive: `None = 0`,
 `AboutToBeTaken = 1`, then `Level1 = 100`, `Level2 = 101`, `Level3 = 102`. The gap is load-bearing —
 the game's own test for "there is a hunter here" is `get_isCurrentNodeHunted`, a comparison against
@@ -256,6 +266,11 @@ A postfix swaps that span for one of three things:
 | `(Auto route prevented by Hunters)` | red | The hunt is sitting on the only way there |
 
 N is the number of rooms the route crosses, and each of those rooms is a turn of the hunt.
+
+![A four-room route in amber, warning that hunters may reach it](../images/mapautoroute-route-hunted.jpg)
+
+*The middle case, and the one worth having: the way is clear now, and four turns is long enough
+that the hunt on the right may not leave it that way.*
 
 The third line needs two searches to be honest about. The first is the route the mod would take,
 which goes around hunters; when it comes back empty the second asks the same question without that
