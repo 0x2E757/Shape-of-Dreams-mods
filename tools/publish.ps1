@@ -12,10 +12,19 @@
 # Release rather than Debug, because there is no reason to ship an unoptimised build with full
 # symbols. The staged metadata.json is rewritten to point at the release path.
 param(
-    [string]$OutDir = (Join-Path $PSScriptRoot "dist")
+    [string]$OutDir = (Join-Path (Split-Path $PSScriptRoot -Parent) "dist")
 )
 
 $ErrorActionPreference = "Stop"
+
+# These scripts live in tools but act on the repository, which is its parent.
+$repo = Split-Path $PSScriptRoot -Parent
+
+# Named rather than discovered, because the list of mods and the list of things to publish are not
+# the same list: DevTools is a testing tool for the other two and has no business on the workshop.
+# build.ps1 and launch.ps1 do discover, which is right for them - it is meant to be built and run,
+# just not shipped.
+$publish = @("AutoCast", "MoreGemSlots")
 
 & (Join-Path $PSScriptRoot "build.ps1") -Configuration Release
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
@@ -26,9 +35,9 @@ if ($LASTEXITCODE -ne 0) { throw "build failed" }
 # in dist\ rather than here, and wiping dist\ would lose it - the next upload would then publish a
 # duplicate. So it is carried back into the working copy first, where it belongs and where git
 # keeps it.
-foreach ($mod in @("AutoCast", "MoreGemSlots")) {
+foreach ($mod in $publish) {
     $published = Join-Path $OutDir "$mod\about\publishedfileid.txt"
-    $keep = Join-Path $PSScriptRoot "$mod\about\publishedfileid.txt"
+    $keep = Join-Path $repo "mods\$mod\about\publishedfileid.txt"
     if ((Test-Path $published) -and -not (Test-Path $keep)) {
         Copy-Item $published $keep
         "$mod - kept workshop id $(Get-Content $published -Raw)"
@@ -37,8 +46,8 @@ foreach ($mod in @("AutoCast", "MoreGemSlots")) {
 
 if (Test-Path $OutDir) { Remove-Item $OutDir -Recurse -Force }
 
-foreach ($mod in @("AutoCast", "MoreGemSlots")) {
-    $source = Join-Path $PSScriptRoot $mod
+foreach ($mod in $publish) {
+    $source = Join-Path $repo "mods\$mod"
     $target = Join-Path $OutDir $mod
     $assembly = "bin/Release/netstandard2.1/$mod.dll"
 

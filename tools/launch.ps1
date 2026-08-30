@@ -11,9 +11,11 @@
 param(
     [string]$GameDir = "C:\Program Files (x86)\Steam\steamapps\common\Shape of Dreams",
 
-    # Which folder the game treats as its mod directory. Defaults to the working copy; point it at
-    # dist\ to run and publish the staged copies instead - see publish.ps1.
-    [string]$ModDir = $PSScriptRoot,
+    # Which folder the game treats as its mod directory. Defaults to mods\, which is where the
+    # mod folders live for exactly this reason: the loader takes each immediate subdirectory of
+    # -moddir as a mod and looks no deeper. Point it at dist\ to run the staged copies instead -
+    # see publish.ps1.
+    [string]$ModDir = (Join-Path (Split-Path $PSScriptRoot -Parent) "mods"),
 
     # Start through Steam rather than by running the exe.
     #
@@ -33,9 +35,17 @@ if (-not (Get-Process -Name steam -ErrorAction SilentlyContinue)) {
 }
 
 Write-Host "Mod directory: $ModDir" -ForegroundColor Cyan
-foreach ($meta in Get-ChildItem -Path $ModDir -Filter metadata.json -Recurse) {
-    $m = Get-Content $meta.FullName -Raw | ConvertFrom-Json
-    $dll = Join-Path $meta.Directory.Parent.FullName ($m.assemblies[0] -replace '/', '\')
+
+# The game treats each immediate subdirectory of -moddir as a mod and looks no deeper:
+# DewMod.AddAllModsInDirectory calls Directory.GetDirectories with SearchOption.TopDirectoryOnly.
+# So this walks it the same way. Searching recursively also found the staged copies under dist\,
+# which have the same ids, and listed two mods the game was only ever going to load one of.
+foreach ($dir in Get-ChildItem -Path $ModDir -Directory) {
+    $meta = Join-Path $dir.FullName "about\metadata.json"
+    if (-not (Test-Path $meta)) { continue }
+
+    $m = Get-Content $meta -Raw | ConvertFrom-Json
+    $dll = Join-Path $dir.FullName ($m.assemblies[0] -replace '/', '\')
     $state = if (Test-Path $dll) { "built" } else { "NOT BUILT - run build.ps1" }
     Write-Host ("  {0,-16} {1}" -f $m.name, $state)
 }

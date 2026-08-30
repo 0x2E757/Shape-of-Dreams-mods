@@ -9,6 +9,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# These scripts live in tools but act on the repository, which is its parent.
+$repo = Split-Path $PSScriptRoot -Parent
+
 # Finding dotnet.exe is not the same as finding an SDK: a machine with only the runtime installed
 # has the shared host on PATH, and it answers "No .NET SDKs were found" to every build. So each
 # candidate is asked what SDKs it has, and the first one that names any wins.
@@ -31,7 +34,7 @@ if (-not $dotnet) {
 }
 
 $failed = @()
-foreach ($proj in Get-ChildItem -Path $PSScriptRoot -Filter *.csproj -Recurse) {
+foreach ($proj in Get-ChildItem -Path $repo -Filter *.csproj -Recurse) {
     Write-Host "=== $($proj.BaseName) ===" -ForegroundColor Cyan
     & $dotnet build $proj.FullName -c $Configuration -v minimal --nologo
     if ($LASTEXITCODE -ne 0) { $failed += $proj.BaseName }

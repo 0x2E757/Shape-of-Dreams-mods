@@ -1,7 +1,9 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoCast", "AutoCast\AutoCast.csproj", "{F8D0BDD2-1720-4724-92CF-932E0B2FDB07}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoCast", "mods\AutoCast\AutoCast.csproj", "{F8D0BDD2-1720-4724-92CF-932E0B2FDB07}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoreGemSlots", "MoreGemSlots\MoreGemSlots.csproj", "{7FA15649-66A1-4911-840A-4C8BA6EDE558}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoreGemSlots", "mods\MoreGemSlots\MoreGemSlots.csproj", "{7FA15649-66A1-4911-840A-4C8BA6EDE558}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevTools", "mods\DevTools\DevTools.csproj", "{3C1E9A47-5B62-4D08-9E31-2A7F4C6D8B15}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,5 +19,9 @@ Global
 		{7FA15649-66A1-4911-840A-4C8BA6EDE558}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7FA15649-66A1-4911-840A-4C8BA6EDE558}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7FA15649-66A1-4911-840A-4C8BA6EDE558}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C1E9A47-5B62-4D08-9E31-2A7F4C6D8B15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C1E9A47-5B62-4D08-9E31-2A7F4C6D8B15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C1E9A47-5B62-4D08-9E31-2A7F4C6D8B15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C1E9A47-5B62-4D08-9E31-2A7F4C6D8B15}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
