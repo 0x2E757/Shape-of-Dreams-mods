@@ -1,0 +1,3 @@
+An overlay panel for testing the other mods in this repository: set the hero level, spawn random memories and essences at a chosen level, and knock the hero out to reach the result screen.
+
+Not published to the workshop.
