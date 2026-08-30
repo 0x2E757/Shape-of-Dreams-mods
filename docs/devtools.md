@@ -32,10 +32,47 @@ way round precisely because they are published.
 | --- | --- |
 | Hero level | Writes `Entity.Status.level`, clamped to `Hero.maxLevel` |
 | Item level | The level used by the two spawn buttons; no upper bound |
+| God mode | A granted `StatBonus` large enough that rooms stop being obstacles — see below |
 | Spawn random memory | A real loot-pool roll at that level |
 | Spawn random essence | The same, at that quality |
-| Knock out hero | `Entity.Kill()` |
+| Knock out hero | `Entity.Kill()`, and the run it ends awards 0 mastery points |
 | Gem tuning | opens the section below |
+
+## God mode
+
+For when the thing being tested is several rooms away and the rooms in between are only in the way.
+
+| Stat | Value | Field |
+| --- | --- | --- |
+| Attack and ability damage | 999 999 | `attackDamageFlat`, `abilityPowerFlat` |
+| Health | 999 999 | `maxHealthFlat` |
+| Ability haste | 500 | `abilityHasteFlat` |
+| Attack and movement speed | +300% | `attackSpeedPercentage`, `movementSpeedPercentage` |
+
+**It is a granted `StatBonus`, not anything written into the hero.** `EntityStatus` keeps a list of
+those and folds them into every `CalculateStats`, and `AddStatBonus` hands the object back so
+`RemoveStatBonus` can take exactly it away again — which makes switching this off exact rather than
+approximate. Writing `baseStats` or `finalStats` instead would be undone by the next calculation and
+would have no way back to the numbers the hero actually had.
+
+Which of the two kinds of number to use follows from `CalculateStats`: a `Flat` is added to the base
+stat, a `Percentage` is divided by a hundred and applied as a multiplier. So 300 is `+300%`, and
+`maxHealthFlat` reaches a million where `maxHealthPercentage` would have multiplied whatever the
+hero happened to have.
+
+**The panel asks for the state it wants every frame rather than for a change.** A room load hands
+back a different `Hero` object and the old one takes its granted bonuses with it, so a one-off grant
+would appear to switch itself off somewhere between two rooms. Applying it declaratively — grant if
+wanted and the hero being played is not the hero it was granted to — repairs that, and covers the
+other two cases for free: the toggle set in a menu before a run exists, and the mod reloaded with
+the setting already true. The button says `(waiting for a hero)` while that is where it stands.
+
+Nothing here grants invulnerability outright. A hero with a million health can still be killed by
+something that ignores health, which is worth still being able to watch happen.
+
+The toggle persists, like the panel's other state. A session that ended with it on starts with it
+on, which is the right way round for something turned on to get through a map quickly, and the
+button says which it is either way.
 
 ## What the mod was developed with, and no longer ships
 
@@ -153,6 +190,22 @@ judging balance it is not.
 `GameManager.CheckGameOver` concludes the run once *every* hero in `ActorManager.allHeroes` is
 knocked out. Solo, that reaches the result screen a moment later. In co-op it does nothing until
 the others are down too, which is the game's rule rather than something to work around.
+
+**A run ended that way is worth no mastery.** What the profile calls points is traveler mastery,
+and the whole of it goes through one function: `DewSave.ConsumeGameResult` asks
+`Dew.GetRewardedMasteryPoints(minutes)` — the minutes being combat time, floored at seven per
+heroic boss kill and one and a half per mini boss — then hands the number to
+`DewProfileStats.AddMasteryPoints` and reports it as `LastGamePlayReward.heroMasteryPoints`. So a
+prefix returning zero from that one function covers both the screen and the profile. The button
+arms it *before* the kill, since knocking out the last hero can conclude the run in the same frame,
+and `ConsumeGameResult` disarms it afterwards so it covers exactly the run it was asked about.
+
+This is the mod's only Harmony patch, and the only thing it could not do by calling the game.
+
+**It zeroes mastery and nothing else.** `ConsumeGameResult` also accumulates kills, deaths, damage
+dealt and taken, heals, gold and dream dust into the per-hero statistics, and appends the run to
+the result history. Those are left alone on purpose: blanking them means blanking the result
+screen, and reading the result screen is usually why the test run happened.
 
 The panel is built the way the removed tuning panels taught, and the two rules from
 **The tuning panel, which no longer ships** are load-bearing here:

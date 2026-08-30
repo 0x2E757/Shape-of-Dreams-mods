@@ -56,6 +56,12 @@ namespace DevTools
         // states: they belong in the save file and have no business being edited by hand.
         [HideInInspector] public bool panelOpen = true;
         [HideInInspector] public int itemLevel = 1;
+
+        // Kept with the other panel state rather than offered as a setting, for the same reason:
+        // the panel is the interface. It does persist, so a session that ended with it on starts
+        // with it on - which is the right way round for something turned on to get through a map
+        // quickly, and is visible on the panel either way.
+        [HideInInspector] public bool godMode;
     }
 
     // Named DevToolsMod rather than DevTools, unlike its two siblings, because a class with the
@@ -70,11 +76,27 @@ namespace DevTools
         private void Awake()
         {
             LoadConfigsToDisk();
+
+            // The first Harmony in this mod, and it earns its keep for one thing: a run ended from
+            // the panel has to be worth no mastery, and the only place that can be said is inside
+            // the function that works out how much a run earned. See ScorelessRun.cs.
+            harmony.PatchAll();
+
             Debug.Log($"[DevTools] loaded: {mod.metadata.id} - {config.hotkey} toggles the panel");
         }
 
         private void OnDestroy()
         {
+            // Before the panel goes, since it is the panel that would otherwise have handed the
+            // bonus back. A hero left with god mode on and nothing left to switch it off would
+            // keep it for the rest of the run.
+            GodMode.Reset();
+            ScorelessRun.Disarm();
+
+            // Pass the id. The stock template's bare UnpatchAll() takes out every patch in the
+            // process, other mods' included.
+            harmony.UnpatchAll(harmony.Id);
+
             // The canvas is DontDestroyOnLoad, so nothing else is ever going to take it away.
             if (_panel != null) Destroy(_panel.gameObject);
             Debug.Log("[DevTools] unloaded: " + mod.metadata.id);

@@ -51,6 +51,8 @@ namespace DevTools
         private TextMeshProUGUI _itemLevelText;
         private TextMeshProUGUI _statusText;
         private Button[] _actionButtons;
+        private Button _godButton;
+        private string _godLabel = "";
 
         private string _status = "";
 
@@ -118,6 +120,12 @@ namespace DevTools
             _heroLevelText = NumberRow(_box, "Hero level", HeroLevelDelta);
             _itemLevelText = NumberRow(_box, "Item level", ItemLevelDelta);
 
+            // Left interactable whatever the hero is doing, unlike the buttons below it: it is a
+            // switch rather than an action, and setting it before a run starts so that the run
+            // starts with it on is a perfectly good thing to want.
+            _godButton = ActionButton(_box, "", ToggleGodMode);
+            LabelGodButton();
+
             _actionButtons = new[]
             {
                 ActionButton(_box, "Spawn random memory", () => DevActions.SpawnMemory(_config.itemLevel)),
@@ -131,6 +139,39 @@ namespace DevTools
 
             _statusText = Label(_box, "", FontSize - 4f);
             _statusText.color = new Color(0.7f, 0.75f, 0.8f, 1f);
+        }
+
+        // ----- god mode -------------------------------------------------------------
+        //
+        // Wording rather than a tick glyph, which is the same choice the two toggles in the
+        // tuning section already made: the panel's font is the game's, and what it has a glyph
+        // for is not something this file gets to decide.
+
+        private string ToggleGodMode()
+        {
+            _config.godMode = !_config.godMode;
+            _save?.Invoke();
+
+            // Applied by the next frame's Update rather than here, so that turning it on with no
+            // hero to put it on is not a different code path from turning it on with one.
+            return _config.godMode ? "god mode on" : "god mode off";
+        }
+
+        private void LabelGodButton()
+        {
+            if (_godButton == null) return;
+
+            string label = _config.godMode ? "God mode: on" : "God mode: off";
+
+            // On but not granted is the ordinary state in a menu, between runs, and for a guest
+            // in someone else's game - all of which look like a switch that did not take unless
+            // the button says otherwise.
+            if (_config.godMode && !GodMode.IsApplied) label += "  (waiting for a hero)";
+
+            if (label == _godLabel) return;
+
+            _godLabel = label;
+            DewGUI.SetText(_godButton.gameObject, label);
         }
 
         // ----- the gem tuning section -----------------------------------------------
@@ -446,6 +487,12 @@ namespace DevTools
                                 ? DevActions.HeroLevel + "/" + DevActions.HeroMaxLevel
                                 : "-";
             _itemLevelText.text = _config.itemLevel.ToString();
+
+            // Every frame, because a room load replaces the hero and takes the granted bonus with
+            // it. Asking for the state that is wanted rather than for a change is what makes that
+            // repair itself instead of looking like the switch turning itself off.
+            GodMode.Apply(_config.godMode);
+            LabelGodButton();
 
             foreach (var button in _actionButtons)
                 if (button.interactable != canAct) button.interactable = canAct;

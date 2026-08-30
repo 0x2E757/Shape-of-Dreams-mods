@@ -133,8 +133,12 @@ namespace DevTools
         {
             if (!CanAct(out string reason)) return reason;
 
+            // Before the kill rather than after: knocking out the last hero can conclude the run
+            // in the same frame, and the flag has to be up before anything consumes a result.
+            ScorelessRun.Arm();
+
             LocalHero.Kill();
-            return "knocked out - the result screen follows once every hero is down";
+            return "knocked out, 0 mastery - the result screen follows once every hero is down";
         }
     }
 }
