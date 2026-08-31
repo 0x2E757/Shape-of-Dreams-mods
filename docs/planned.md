@@ -1,11 +1,11 @@
 # Planned
 
-Five mods that have names but no code. Four of them have been traced far enough to say where the
+Four mods that have names but no code. Three of them have been traced far enough to say where the
 mod would hook, whether the host has to install it, and — where it matters — what the game already
 does, so that nothing here gets built twice. The last one, `ParagonLevels`, is an idea written down
 and not yet looked into; its section says so rather than guessing.
 
-Three have left this page by being built, and each took its section with it — the same notes with
+Four have left this page by being built, and each took its section with it — the same notes with
 the answers filled in, and with what the notes got wrong written down beside them:
 
 | Was here | Is now |
@@ -13,6 +13,7 @@ the answers filled in, and with what the notes got wrong written down beside the
 | `FaceTheCursor` | [facethecursor.md](facethecursor.md) |
 | `TransparentEffects` | [transparenteffects.md](transparenteffects.md) |
 | `CloserSouls` | [closersouls.md](closersouls.md) |
+| `BuildWhileDown` | [buildwhiledown.md](buildwhiledown.md) |
 
 Everything below was read out of `Dew.Core`, `Dew.Contents` and `Dew.UI` decompiled with
 `ilspycmd -p` against the same install `Directory.Build.props` points at. `Dew.Contents` will not
@@ -75,30 +76,6 @@ which is not the same offer twice.
 A postfix on `Dew.IsDejavuFree` plus a button is the whole mod. `UI_Lobby_DejavuWindow` already
 draws the remaining time from the same dictionary, so it is where the button belongs.
 
-## BuildWhileDown
-
-Client-side, and the gate is a single expression in `ControlManager.FrameUpdate`:
-
-```csharp
-shouldProcessCharacterInput = shouldProcessCharacterInputAllowKnockedOut
-    && (!(controllingEntity is Hero hero) || !hero.isKnockedOut);
-```
-
-Two callers stand between a knocked-out player and their loadout: `UI_InGame_SkillButtons` and
-`UI_InGame_SkillButton_EditSkill`. The pattern to copy is in the same codebase —
-`UI_InGame_WorldMap` returns `shouldProcessCharacterInputAllowKnockedOut`, because the map is meant
-to work while down. The mod moves those two onto the same flag.
-
-**The server does not care.** `UserCode_CmdEquipGem_Internal` calls `EquipGem` and
-`UserCode_CmdEquipSkill_Internal` calls `EquipSkill`, and while those two validate ownership and
-refuse a second essence of the same type, neither looks at `isKnockedOut`. So the host does not
-need the mod.
-
-Worth confining to rearranging what is already equipped. `CmdMoveGem` and `CmdUnequipGem` take a
-world position, and a knocked-out hero has had its renderers disabled and been teleported to its own
-soul shrine by `Shrine_HeroSoul.OnCreate` — dropping an essence on the floor from there puts it
-somewhere nobody meant.
-
 ## AreMyGemsCompatible
 
 Client-side, and the interesting one, because the question it asks turns out to be well posed.
@@ -152,5 +129,5 @@ Written down, not researched. The idea as it was given, and nothing added to it:
 
 > Global progression for completed cycles.
 
-None of what the four sections above carry has been done for this one — no entry point, no
+None of what the three sections above carry has been done for this one — no entry point, no
 host-or-client answer, no check on what the game already provides.

@@ -1,0 +1,13 @@
+Memories and essences can be rearranged while you are knocked out, instead of only while alive.
+
+The loadout opens with the same key it always does, and keeps working while the camera follows a teammate.
+
+Dropping things on the floor stays blocked while you are down. Your hero is not where you are looking - it is where it fell - so an essence dropped from there would land in a room the party has already left.
+
+Nothing else about being down changes: still silenced, still stunned, still waiting for someone to reach your soul.
+
+[h2]In co-op[/h2]
+Nobody else needs it. The server never checked whether you were down before accepting these changes; only the interface did.
+
+[h2]Source code[/h2]
+[url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]

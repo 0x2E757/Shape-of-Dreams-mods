@@ -1,6 +1,6 @@
 # Multiplayer
 
-All six published mods work in co-op, and are built along the boundary the game already draws.
+All seven published mods work in co-op, and are built along the boundary the game already draws.
 
 Nothing gates a modded session. `DewMod.isGameplayAltered` feeds exactly one thing — a lobby
 attribute named `isModded` — so a lobby is *labelled* as modded, not closed. The authors' code of
@@ -64,17 +64,27 @@ they would see them, which is the choice the game's own toned-down check makes.
 `isServer` and writes into `ZoneManager.nodes`, a SyncVar list, so a guest running it is patching a
 method its own machine never calls. One installed copy changes the run for the whole party; a party
 whose host does not have it plays the stock game however many other people do. It is the only one of
-the six where installing it changes somebody else's game, which is why its description says so in
+the seven where installing it changes somebody else's game, which is why its description says so in
 the first line about co-op rather than the last.
+
+**BuildWhileDown asks the server for nothing new.** The gates it opens are all client-side — an
+early return, a faded canvas group, two input triggers — and the commands it lets through are the
+ones the loadout always sent. `UserCode_CmdEquipGem_Internal` and `UserCode_CmdEquipSkill_Internal`
+validate ownership and refuse a duplicate essence type, and **neither looks at `isKnockedOut`**, so
+an unmodded host accepts them from a knocked-out guest exactly as from a standing one. What the mod
+refuses on its own account is dropping to the floor: a knocked-out hero stands where it fell, which
+is often a room the party has left, so `ControlManager.dropConstraint` is held shut for as long as
+the hero is down.
 
 **Who needs to install what.** MoreGemSlots is required on both sides: the host decides the slot
 counts, but *drawing* them is a local UI patch, and without it a guest's interface cannot render
 more than three — the same failure as the "slots vanish at 5+" bug in **Getting past the essence
 slot ceiling** in [moregemslots.md](moregemslots.md). AutoCast is not required on both sides; it is input automation and works for
 whoever has it. Neither is FaceTheCursor, and for the strongest reason: what it
-changes is already replicated, and it changes nothing about anyone else. TransparentEffects is the
-same shape — one player, one screen, nothing sent. CloserSouls is the opposite, and the only one of
-its kind here: it does nothing at all on a guest, and everything on a host.
+changes is already replicated, and it changes nothing about anyone else. TransparentEffects and
+BuildWhileDown are the same shape — one player, one screen, nothing sent. CloserSouls is the
+opposite, and the only one of its kind here: it does nothing at all on a guest, and everything on a
+host.
 
 Most of the above is read off the code and the game's API rather than watched happening. Several
 pieces only exercise in a live two-client session, and one whole mod does: **CloserSouls cannot be
@@ -84,7 +94,9 @@ Everything it does needs a second player breathing.
 
 The rest: AutoCast's guest `CmdCast` path, still
 unverified; FaceTheCursor's hero as the *other* player sees it, which is the same kind of claim and
-is unverified for the same reason; and MapAutoRoute's vote — which has now been seen, since a travel vote needs more than
+is unverified for the same reason; BuildWhileDown's whole spectating half, which only exists once
+somebody else is alive to spectate — and in particular whether the skill bar really is clear of a
+`UI_InGame_VisibilityOnSpectate` that would hide it a second time; and MapAutoRoute's vote — which has now been seen, since a travel vote needs more than
 one player to happen at all (`ShouldVoteOnTravel` is `gamePlayers.Count(...) > 1`). A vote was
 started for a node three rooms out and the route drew, which means the server accepted the widened
 command and the panel painted; see the screenshot in [mapautoroute.md](mapautoroute.md). What that

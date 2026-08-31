@@ -1,0 +1,12 @@
+{
+  "id": "com.remouq.buildwhiledown",
+  "name": "BuildWhileDown",
+  "author": "Remouq",
+  "modVer": "1.0",
+  "supportedGameVer": [
+    "*"
+  ],
+  "assemblies": [
+    "bin/Debug/netstandard2.1/BuildWhileDown.dll"
+  ]
+}

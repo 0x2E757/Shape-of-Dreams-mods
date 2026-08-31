@@ -25,7 +25,7 @@ $repo = Split-Path $PSScriptRoot -Parent
 # build.ps1 and launch.ps1 do discover, which is right for them - it is meant to be built and run,
 # just not shipped.
 $publish = @("AutoCast", "MoreGemSlots", "MapAutoRoute", "FaceTheCursor",
-             "TransparentEffects", "CloserSouls")
+             "TransparentEffects", "CloserSouls", "BuildWhileDown")
 
 & (Join-Path $PSScriptRoot "build.ps1") -Configuration Release
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
