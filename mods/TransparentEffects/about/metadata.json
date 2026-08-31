@@ -1,0 +1,12 @@
+{
+  "id": "com.remouq.transparenteffects",
+  "name": "TransparentEffects",
+  "author": "Remouq",
+  "modVer": "1.0",
+  "supportedGameVer": [
+    "*"
+  ],
+  "assemblies": [
+    "bin/Debug/netstandard2.1/TransparentEffects.dll"
+  ]
+}

@@ -1,12 +1,17 @@
 # Planned
 
-Seven mods that have names but no code. Six of them have been traced far enough to say where the
+Six mods that have names but no code. Five of them have been traced far enough to say where the
 mod would hook, whether the host has to install it, and — where it matters — what the game already
 does, so that nothing here gets built twice. The last one, `ParagonLevels`, is an idea written down
 and not yet looked into; its section says so rather than guessing.
 
-`FaceTheCursor` was the seventh and is now built; its section moved to
-[facethecursor.md](facethecursor.md), which is the same notes with the answers filled in.
+Two have left this page by being built, and each took its section with it — the same notes with the
+answers filled in, and with what the notes got wrong written down beside them:
+
+| Was here | Is now |
+| --- | --- |
+| `FaceTheCursor` | [facethecursor.md](facethecursor.md) |
+| `TransparentEffects` | [transparenteffects.md](transparenteffects.md) |
 
 Everything below was read out of `Dew.Core`, `Dew.Contents` and `Dew.UI` decompiled with
 `ilspycmd -p` against the same install `Directory.Build.props` points at. `Dew.Contents` will not
@@ -105,36 +110,6 @@ Three things the mod has to carry itself or work around:
   `RoomMod_HeroSoul` with that guid — so the escalation must be decided at knockout time, not on
   reload.
 
-## TransparentEffects
-
-Client-side, and **half of it is already a stock setting**, which is the first thing to know.
-
-`DewSave.profileMain.gameplay.reduceOtherPlayerEffectsStrength` — declared in
-`DewGameplaySettings_User` as `ReduceOtherPlayerEffectsStrength { Low, Medium, High, VeryHigh,
-Hide }` — feeds `DewResources.TonedDownProcessor`, which multiplies alpha by 1, 0.7, 0.45, 0.25 or
-0 along with two further factors, and reaches renderers and materials rather than only particle
-systems. Prefabs opt out of it with `IOtherPlayersTonedDownDisable` (the knockout explosion does)
-or cap it with `IOtherPlayersTonedDownLimit.maxReduction`.
-
-What picks the variant is in `Entity.Awake`, in a `spawnedChildVarDefProcessor` delegate, and it is
-narrow in exactly the way that leaves room for the mod: it adds `DewResources.vOtherPlayersTonedDown`
-only for a spawned type that `IsSubclassOf(typeof(AbilityInstance))`, and only when the local player
-— or the spectated one, if the camera is following someone else — is **not** the owner. **Your own
-effects are never toned down by anything.**
-
-So the mod is one new variant alongside the game's own. `DewResources.GetNextVariantId()` and
-`RegisterVariantProcessor(int, ResourceVariantProcessor)` are both public and static, and
-`Entity.spawnedChildVarDefProcessor` is the list to add to; the condition is the mirror image of the
-stock one. Against other players the mod's claim is a continuous value instead of five steps, and
-the option to ignore the per-prefab caps.
-
-`DewEffect.ChangeColorRecursively(gobj, hue, saturationMult, valueMult, alphaMult)` is the blunter
-alternative. Its `alphaMult` is genuinely plumbed through — particle start colour, colour over
-lifetime, colour by speed, both custom data channels, `FxEntityColor`, `FxMeshTrail` and
-`FxEntityShell` — but unlike the stock processor it never touches an ordinary renderer, so it dims
-less than it looks like it should. `DewEffect.TintRecursively` is no use here at all: `TintObject`
-opens by forcing `color.a = 1f`.
-
 ## BuildWhileDown
 
 Client-side, and the gate is a single expression in `ControlManager.FrameUpdate`:
@@ -212,5 +187,5 @@ Written down, not researched. The idea as it was given, and nothing added to it:
 
 > Global progression for completed cycles.
 
-None of what the six sections above carry has been done for this one — no entry point, no
+None of what the five sections above carry has been done for this one — no entry point, no
 host-or-client answer, no check on what the game already provides.

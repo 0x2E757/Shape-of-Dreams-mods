@@ -1,0 +1,17 @@
+Skill effects can be made see-through - your own and other players', set separately.
+
+[h2]Settings[/h2]
+[list]
+[*][b]Opacity of my own effects[/b] - 1 is the game untouched, 0 is invisible
+[*][b]Opacity of other players' effects[/b]
+[/list]
+
+Only how effects are drawn changes. Nothing moves, hits or lands differently, and enemies are never touched.
+
+The game's own "reduce other players' effects" setting is still there and still applies on top of the second row.
+
+[h2]In co-op[/h2]
+Nobody else needs it and nobody else sees anything different - each client decides how to draw the effects on its own screen.
+
+[h2]Source code[/h2]
+[url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]

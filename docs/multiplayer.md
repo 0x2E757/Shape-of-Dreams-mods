@@ -1,6 +1,6 @@
 # Multiplayer
 
-All four published mods work in co-op, and are built along the boundary the game already draws.
+All five published mods work in co-op, and are built along the boundary the game already draws.
 
 Nothing gates a modded session. `DewMod.isGameplayAltered` feeds exactly one thing — a lobby
 attribute named `isModded` — so a lobby is *labelled* as modded, not closed. The authors' code of
@@ -51,12 +51,22 @@ server is told everyone's cursor in `DewPlayer.cursorWorldPos`, and it was built
 unknown Mirror message id is a disconnect in both directions, so a modded guest speaking first to a
 vanilla host would kick itself out of the run.
 
+**TransparentEffects is a decision each screen makes alone.** A resource variant is chosen on the
+machine that instantiates the effect, in `DewResources.GetSuggestedVarDef` — which the host reaches
+through `Actor.CreateAbilityInstance` and every client reaches again through
+`SpawnManager.SpawnFromDewDatabaseHandler` when Mirror tells it the effect exists. So the mod
+answers a question the game was already asking locally, and the answer goes nowhere. The effect
+itself is untouched: same actor, same position, same damage, drawn at a different alpha. "Mine"
+follows the camera rather than the keyboard, so spectating a teammate shows their effects the way
+they would see them, which is the choice the game's own toned-down check makes.
+
 **Who needs to install what.** MoreGemSlots is required on both sides: the host decides the slot
 counts, but *drawing* them is a local UI patch, and without it a guest's interface cannot render
 more than three — the same failure as the "slots vanish at 5+" bug in **Getting past the essence
 slot ceiling** in [moregemslots.md](moregemslots.md). AutoCast is not required on both sides; it is input automation and works for
 whoever has it. Neither is FaceTheCursor, and for the strongest reason of the three: what it
-changes is already replicated, and it changes nothing about anyone else.
+changes is already replicated, and it changes nothing about anyone else. TransparentEffects is the
+same shape — one player, one screen, nothing sent.
 
 Most of the above is read off the code and the game's API rather than watched happening. Three
 pieces only exercise in a live two-client session: AutoCast's guest `CmdCast` path, still
