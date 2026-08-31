@@ -1,17 +1,18 @@
 # Planned
 
-Six mods that have names but no code. Five of them have been traced far enough to say where the
+Five mods that have names but no code. Four of them have been traced far enough to say where the
 mod would hook, whether the host has to install it, and — where it matters — what the game already
 does, so that nothing here gets built twice. The last one, `ParagonLevels`, is an idea written down
 and not yet looked into; its section says so rather than guessing.
 
-Two have left this page by being built, and each took its section with it — the same notes with the
-answers filled in, and with what the notes got wrong written down beside them:
+Three have left this page by being built, and each took its section with it — the same notes with
+the answers filled in, and with what the notes got wrong written down beside them:
 
 | Was here | Is now |
 | --- | --- |
 | `FaceTheCursor` | [facethecursor.md](facethecursor.md) |
 | `TransparentEffects` | [transparenteffects.md](transparenteffects.md) |
+| `CloserSouls` | [closersouls.md](closersouls.md) |
 
 Everything below was read out of `Dew.Core`, `Dew.Contents` and `Dew.UI` decompiled with
 `ilspycmd -p` against the same install `Directory.Build.props` points at. `Dew.Contents` will not
@@ -73,42 +74,6 @@ which is not the same offer twice.
 
 A postfix on `Dew.IsDejavuFree` plus a button is the whole mod. `UI_Lobby_DejavuWindow` already
 draws the remaining time from the same dictionary, so it is where the button belongs.
-
-## CloserSouls
-
-Host-side. One method decides where a soul goes:
-
-```csharp
-// Se_HeroKnockedOut.CheckAndAddHeroSoul(), public and server-only
-TryGetNodeIndexForNextGoal(new GetNodeIndexSettings {
-    desiredDistance = GameManager.instance.difficulty.lostSoulDistance,
-    avoidMainModifier = false,
-    preferCloserToExit = true,
-}, out var nodeIndex);
-ZoneManager.instance.AddModifier<RoomMod_HeroSoul>(nodeIndex, victim.owner.guid);
-```
-
-It runs from `OnCreate` — the moment of the knockout — and again from `ClientEventOnRoomLoaded` on
-every room load after it.
-
-**`TryGetNodeIndexForNextGoal` cannot return the current room.** Its scoring subtracts 10000 for
-`i == currentNodeIndex` and another 10000 for `WorldNodeStatus.HasVisited`, so the first death has
-to bypass it and call `AddModifier<RoomMod_HeroSoul>(ZoneManager.instance.currentNodeIndex, guid)`
-directly. That is supported rather than smuggled: `AddModifier` has a branch for
-`nodeIndex == currentNodeIndex && Room.instance.modifiers.isRoomActive` that routes through
-`HandleRuntimeAddition`, and `Shrine_Chaos` and `Shrine_CorruptedChaos` both create a
-`Shrine_HeroSoul` in the live room already. The second and third deaths can go back through
-`TryGetNodeIndexForNextGoal` with `desiredDistance` of `(1, 1)` and `(2, 2)`.
-
-Three things the mod has to carry itself or work around:
-
-- **The death count is the mod's own state**, kept per player guid and cleared when the region
-  changes. Nothing in `Se_HeroKnockedOut` counts deaths.
-- **No soul is placed at all** when `ZoneManager.instance.currentNode.type` is
-  `WorldNodeType.ExitBoss`, and that guard should stay.
-- **The room-load call will not add a second soul** — it checks whether any node already carries a
-  `RoomMod_HeroSoul` with that guid — so the escalation must be decided at knockout time, not on
-  reload.
 
 ## BuildWhileDown
 
@@ -187,5 +152,5 @@ Written down, not researched. The idea as it was given, and nothing added to it:
 
 > Global progression for completed cycles.
 
-None of what the five sections above carry has been done for this one — no entry point, no
+None of what the four sections above carry has been done for this one — no entry point, no
 host-or-client answer, no check on what the game already provides.

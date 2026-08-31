@@ -1,0 +1,16 @@
+When someone goes down, their soul is left closer - by default the first death of a region right in the room it happened in.
+
+[h2]Settings[/h2]
+[list]
+[*][b]Rooms away on the first death[/b] - 0 leaves the soul where you fell
+[*][b]Extra rooms for each death after[/b]
+[*][b]Never further away than[/b]
+[/list]
+
+The count starts again in each region. Everything else is the game's own: the same shrine, the same quest, the same revive.
+
+[h2]In co-op[/h2]
+[b]The host needs it, and only the host.[/b] Where a soul goes is decided on the server, so one installed copy changes the run for the whole party - and a party whose host does not have it plays the stock game however many other people do.
+
+[h2]Source code[/h2]
+[url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]

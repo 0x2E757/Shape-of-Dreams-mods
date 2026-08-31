@@ -1,6 +1,6 @@
 # Multiplayer
 
-All five published mods work in co-op, and are built along the boundary the game already draws.
+All six published mods work in co-op, and are built along the boundary the game already draws.
 
 Nothing gates a modded session. `DewMod.isGameplayAltered` feeds exactly one thing — a lobby
 attribute named `isModded` — so a lobby is *labelled* as modded, not closed. The authors' code of
@@ -60,16 +60,29 @@ itself is untouched: same actor, same position, same damage, drawn at a differen
 follows the camera rather than the keyboard, so spectating a teammate shows their effects the way
 they would see them, which is the choice the game's own toned-down check makes.
 
+**CloserSouls is host-only in both directions.** `Se_HeroKnockedOut.CheckAndAddHeroSoul` runs behind
+`isServer` and writes into `ZoneManager.nodes`, a SyncVar list, so a guest running it is patching a
+method its own machine never calls. One installed copy changes the run for the whole party; a party
+whose host does not have it plays the stock game however many other people do. It is the only one of
+the six where installing it changes somebody else's game, which is why its description says so in
+the first line about co-op rather than the last.
+
 **Who needs to install what.** MoreGemSlots is required on both sides: the host decides the slot
 counts, but *drawing* them is a local UI patch, and without it a guest's interface cannot render
 more than three — the same failure as the "slots vanish at 5+" bug in **Getting past the essence
 slot ceiling** in [moregemslots.md](moregemslots.md). AutoCast is not required on both sides; it is input automation and works for
-whoever has it. Neither is FaceTheCursor, and for the strongest reason of the three: what it
+whoever has it. Neither is FaceTheCursor, and for the strongest reason: what it
 changes is already replicated, and it changes nothing about anyone else. TransparentEffects is the
-same shape — one player, one screen, nothing sent.
+same shape — one player, one screen, nothing sent. CloserSouls is the opposite, and the only one of
+its kind here: it does nothing at all on a guest, and everything on a host.
 
-Most of the above is read off the code and the game's API rather than watched happening. Three
-pieces only exercise in a live two-client session: AutoCast's guest `CmdCast` path, still
+Most of the above is read off the code and the game's API rather than watched happening. Several
+pieces only exercise in a live two-client session, and one whole mod does: **CloserSouls cannot be
+seen working alone at all.** Its own fourth guard is `Dew.GetAliveHeroCount() != 0`, and a solo
+player who is knocked out leaves nobody alive, so no soul is ever placed and the run simply ends.
+Everything it does needs a second player breathing.
+
+The rest: AutoCast's guest `CmdCast` path, still
 unverified; FaceTheCursor's hero as the *other* player sees it, which is the same kind of claim and
 is unverified for the same reason; and MapAutoRoute's vote — which has now been seen, since a travel vote needs more than
 one player to happen at all (`ShouldVoteOnTravel` is `gamePlayers.Count(...) > 1`). A vote was

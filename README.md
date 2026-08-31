@@ -9,6 +9,7 @@ Mods for Shape of Dreams `r.1.3.1.3_s`, built against the game's own assemblies.
 | `MapAutoRoute` | yes | A location you cannot reach in one step can be travelled to anyway: the party walks back through cleared rooms, a turn of the hunt each. |
 | `FaceTheCursor` | yes | The hero keeps looking at the cursor while it walks and while it stands, not only while casting. |
 | `TransparentEffects` | yes | Skill effects can be made see-through, your own and other players' set separately. |
+| `CloserSouls` | yes | A knocked-out player's soul is left closer — by default the first death of a region right where it happened. |
 | `DevTools` | no | An overlay for testing the others: hero level, god mode, spawning memories and essences, ending a run, and live tuning of the slot arrangement. |
 
 *Workshop* is whether a mod is meant to go up at all, not whether it is up today — the column is
@@ -26,7 +27,6 @@ points, and says plainly which one has none yet.
 | --- | --- | --- |
 | `MoreLucidDreams` | host | More run modifiers. The game calls them lucid dreams and ships fifteen, with no cap on how many are active at once. |
 | `PermanentDejavu` | client | Buy a déjà vu item outright instead of renting the right to use it for twenty-four hours. |
-| `CloserSouls` | host | The first death in a region leaves the soul in the room it happened in, the second one room out, the third and later two. |
 | `BuildWhileDown` | client | Memories and essences can be rearranged while knocked out, instead of only while alive. |
 | `AreMyGemsCompatible` | client | Warns about an essence that can never fire in the memory it is socketed into. |
 | `ParagonLevels` | not looked into | Global progression for completed cycles. Written down as an idea and not yet checked against the game. |
@@ -36,7 +36,7 @@ points, and says plainly which one has none yet.
 ```powershell
 .\tools\build.ps1     # Debug; -Configuration Release for the other
 .\tools\launch.ps1    # runs the game with -moddir pointed at mods\
-.\tools\publish.ps1   # stages the five published mods into dist\
+.\tools\publish.ps1   # stages the six published mods into dist\
 ```
 
 Then enable the mods in the in-game mod manager. The player log is at
@@ -63,6 +63,7 @@ mods/                what -moddir points at
   MapAutoRoute/      workshop
   FaceTheCursor/     workshop
   TransparentEffects/  workshop
+  CloserSouls/       workshop
   DevTools/          local only; the testing tool for the others
   Shared/            compiled into each mod, not shipped as a library
 tools/               build, launch, publish, and the two art scripts
@@ -91,10 +92,11 @@ matching code.
 | [mapautoroute.md](docs/mapautoroute.md) | The node graph, widening what counts as adjacent, and drawing a route with the map's own line |
 | [facethecursor.md](docs/facethecursor.md) | Where a hero's facing is decided, the field not to write, and the two places facing reaches the game |
 | [transparenteffects.md](docs/transparenteffects.md) | The resource variant system, the four ids of six that are honoured, and which shader property carries opacity |
+| [closersouls.md](docs/closersouls.md) | Where a soul is placed, the node the search cannot return, and adding a room modifier to a live room |
 | [devtools.md](docs/devtools.md) | The testing overlay, god mode, and the live tuning panel for the slot arrangement |
 | [game-ui.md](docs/game-ui.md) | Reusable ground: shared widgets, localization, the mod config window |
 | [multiplayer.md](docs/multiplayer.md) | How the published mods behave in co-op, and who needs to install what |
-| [planned.md](docs/planned.md) | The six mods that are named but not built: where each one hooks, and what the game already does |
+| [planned.md](docs/planned.md) | The five mods that are named but not built: where each one hooks, and what the game already does |
 | [changelog-format.md](docs/changelog-format.md) | **Follow exactly when releasing.** The changelog template, and the order to do a release in |
 
 A few things that save time and are easy to miss:

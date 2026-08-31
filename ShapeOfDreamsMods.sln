@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FaceTheCursor", "mods\FaceT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TransparentEffects", "mods\TransparentEffects\TransparentEffects.csproj", "{569A8195-7377-449A-BE58-872100E172DA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloserSouls", "mods\CloserSouls\CloserSouls.csproj", "{400CF80A-2BD9-4BB6-B133-919478C5748A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,5 +43,9 @@ Global
 		{569A8195-7377-449A-BE58-872100E172DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{569A8195-7377-449A-BE58-872100E172DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{569A8195-7377-449A-BE58-872100E172DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{400CF80A-2BD9-4BB6-B133-919478C5748A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{400CF80A-2BD9-4BB6-B133-919478C5748A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{400CF80A-2BD9-4BB6-B133-919478C5748A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{400CF80A-2BD9-4BB6-B133-919478C5748A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
