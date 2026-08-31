@@ -1,0 +1,18 @@
+Your hero faces the cursor all the time, not only while casting.
+
+The game normally points a hero along whatever direction it is walking in. This makes it keep looking where you point, standing still and on the move.
+
+[h2]Settings[/h2]
+[list]
+[*][b]While standing still[/b]
+[*][b]While moving[/b] - turn this off if the walk animation bothers you: there is one walk cycle and no strafe, so a hero running one way while facing another moonwalks
+[*][b]Ignore the cursor when closer than[/b] - so the hero holds still instead of spinning when you point at its feet
+[/list]
+
+Casting is untouched: a cast still goes to the cursor, and a memory that locks your facing still locks it.
+
+[h2]In co-op[/h2]
+Only your own hero changes, and everyone sees it turn - the game already sends facing along with position, so nothing extra goes over the network. Players without the mod are not affected at all: their heroes keep facing the way they walk, on your screen and on theirs.
+
+[h2]Source code[/h2]
+[url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]

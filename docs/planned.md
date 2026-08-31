@@ -5,6 +5,9 @@ mod would hook, whether the host has to install it, and — where it matters —
 does, so that nothing here gets built twice. The last one, `ParagonLevels`, is an idea written down
 and not yet looked into; its section says so rather than guessing.
 
+`FaceTheCursor` was the seventh and is now built; its section moved to
+[facethecursor.md](facethecursor.md), which is the same notes with the answers filled in.
+
 Everything below was read out of `Dew.Core`, `Dew.Contents` and `Dew.UI` decompiled with
 `ilspycmd -p` against the same install `Directory.Build.props` points at. `Dew.Contents` will not
 decompile as a whole project — one method, `Se_MorasDomain_MorasCreation.OnCreate`, throws

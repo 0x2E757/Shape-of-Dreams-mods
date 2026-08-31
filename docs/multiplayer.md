@@ -1,6 +1,6 @@
 # Multiplayer
 
-All three published mods work in co-op, and are built along the boundary the game already draws.
+All four published mods work in co-op, and are built along the boundary the game already draws.
 
 Nothing gates a modded session. `DewMod.isGameplayAltered` feeds exactly one thing — a lobby
 attribute named `isModded` — so a lobby is *labelled* as modded, not closed. The authors' code of
@@ -35,15 +35,33 @@ without the mod exchanging a byte. **A player without the mod sees no line at al
 for a distant node: the game's own vote line is the single edge between the party and the voted
 node, and when they are not adjacent there is no such edge to paint.
 
+**FaceTheCursor sends nothing and adds no messages.** It writes `EntityControl._localDesiredAngle`
+on the hero this machine owns, and that field is already part of what the game replicates —
+`UpdatePositionSyncData` sends it as `desiredAngle` alongside position and velocity, and every
+other machine turns the hero to match in `DoMovementObserverFrameUpdate`. So a player running it is
+seen turning correctly by everyone, players with no mods included, and two players who both have it
+see each other aim without either of them adding a byte. It never touches `overridenDesiredAngle`,
+the SyncVar the server owns.
+
+The symmetric consequence is the one worth stating: **it moves nobody's hero but its own owner's.**
+A player without it sends the angle the unmodded game chose, and everyone — including the modded
+clients — replays exactly that. Showing where an unmodded player aims *is* possible, since the
+server is told everyone's cursor in `DewPlayer.cursorWorldPos`, and it was built and then removed;
+[facethecursor.md](facethecursor.md) records why, along with the finding that paid for it — an
+unknown Mirror message id is a disconnect in both directions, so a modded guest speaking first to a
+vanilla host would kick itself out of the run.
+
 **Who needs to install what.** MoreGemSlots is required on both sides: the host decides the slot
 counts, but *drawing* them is a local UI patch, and without it a guest's interface cannot render
 more than three — the same failure as the "slots vanish at 5+" bug in **Getting past the essence
 slot ceiling** in [moregemslots.md](moregemslots.md). AutoCast is not required on both sides; it is input automation and works for
-whoever has it.
+whoever has it. Neither is FaceTheCursor, and for the strongest reason of the three: what it
+changes is already replicated, and it changes nothing about anyone else.
 
-Most of the above is read off the code and the game's API rather than watched happening. Two
+Most of the above is read off the code and the game's API rather than watched happening. Three
 pieces only exercise in a live two-client session: AutoCast's guest `CmdCast` path, still
-unverified, and MapAutoRoute's vote — which has now been seen, since a travel vote needs more than
+unverified; FaceTheCursor's hero as the *other* player sees it, which is the same kind of claim and
+is unverified for the same reason; and MapAutoRoute's vote — which has now been seen, since a travel vote needs more than
 one player to happen at all (`ShouldVoteOnTravel` is `gamePlayers.Count(...) > 1`). A vote was
 started for a node three rooms out and the route drew, which means the server accepted the widened
 command and the panel painted; see the screenshot in [mapautoroute.md](mapautoroute.md). What that

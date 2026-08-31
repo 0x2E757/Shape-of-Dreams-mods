@@ -7,6 +7,7 @@ Mods for Shape of Dreams `r.1.3.1.3_s`, built against the game's own assemblies.
 | `AutoCast` | yes | A toggle above each skill cell; while it is lit, that memory is cast as soon as it leaves cooldown. |
 | `MoreGemSlots` | yes | Essence slots are earned from hero level and memory level, up to seven, and three screens are extended to draw them. |
 | `MapAutoRoute` | yes | A location you cannot reach in one step can be travelled to anyway: the party walks back through cleared rooms, a turn of the hunt each. |
+| `FaceTheCursor` | yes | The hero keeps looking at the cursor while it walks and while it stands, not only while casting. |
 | `DevTools` | no | An overlay for testing the others: hero level, god mode, spawning memories and essences, ending a run, and live tuning of the slot arrangement. |
 
 *Workshop* is whether a mod is meant to go up at all, not whether it is up today — the column is
@@ -35,7 +36,7 @@ points, and says plainly which one has none yet.
 ```powershell
 .\tools\build.ps1     # Debug; -Configuration Release for the other
 .\tools\launch.ps1    # runs the game with -moddir pointed at mods\
-.\tools\publish.ps1   # stages the three published mods into dist\
+.\tools\publish.ps1   # stages the four published mods into dist\
 ```
 
 Then enable the mods in the in-game mod manager. The player log is at
@@ -60,7 +61,8 @@ mods/                what -moddir points at
   AutoCast/          workshop
   MoreGemSlots/      workshop
   MapAutoRoute/      workshop
-  DevTools/          local only; the testing tool for the other three
+  FaceTheCursor/     workshop
+  DevTools/          local only; the testing tool for the others
   Shared/            compiled into each mod, not shipped as a library
 tools/               build, launch, publish, and the two art scripts
 docs/                the notes listed below
@@ -86,6 +88,7 @@ matching code.
 | [autocast.md](docs/autocast.md) | HUD controls, icons, tooltips, hold-to-charge skills, what resets a toggle |
 | [moregemslots.md](docs/moregemslots.md) | The slot formula, losing slots, and getting past the four-slot drawing ceiling on three screens |
 | [mapautoroute.md](docs/mapautoroute.md) | The node graph, widening what counts as adjacent, and drawing a route with the map's own line |
+| [facethecursor.md](docs/facethecursor.md) | Where a hero's facing is decided, the field not to write, and the two places facing reaches the game |
 | [devtools.md](docs/devtools.md) | The testing overlay, god mode, and the live tuning panel for the slot arrangement |
 | [game-ui.md](docs/game-ui.md) | Reusable ground: shared widgets, localization, the mod config window |
 | [multiplayer.md](docs/multiplayer.md) | How the published mods behave in co-op, and who needs to install what |

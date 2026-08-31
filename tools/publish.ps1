@@ -1,4 +1,4 @@
-# Stages both mods into dist\ in the shape the workshop should receive them.
+# Stages the published mods into dist\ in the shape the workshop should receive them.
 #
 # This exists because the game uploads a mod by handing Steam the mod's whole folder
 # (SteamUGC.SetItemContent on ModItem.path). Publishing straight from the working copy would
@@ -24,7 +24,7 @@ $repo = Split-Path $PSScriptRoot -Parent
 # the same list: DevTools is a testing tool for the others and has no business on the workshop.
 # build.ps1 and launch.ps1 do discover, which is right for them - it is meant to be built and run,
 # just not shipped.
-$publish = @("AutoCast", "MoreGemSlots", "MapAutoRoute")
+$publish = @("AutoCast", "MoreGemSlots", "MapAutoRoute", "FaceTheCursor")
 
 & (Join-Path $PSScriptRoot "build.ps1") -Configuration Release
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
@@ -70,12 +70,22 @@ foreach ($mod in $publish) {
     $size = (Get-ChildItem $target -Recurse -File | Measure-Object -Property Length -Sum).Sum
     "{0,-14} {1,3} files, {2:N0} KB" -f $mod,
         (Get-ChildItem $target -Recurse -File).Count, ($size / 1KB)
+
+    # Steam wants a preview image on the item and the mod manager wants an icon in its list, and
+    # neither is something the build can produce - they are drawn, then reduced by make-mod-art.ps1.
+    # Staging happily without them and finding out at the upload is the expensive order to do this
+    # in, so a mod that is not ready to go up says so here instead.
+    $art = @("icon.png", "preview.png") | Where-Object { -not (Test-Path (Join-Path $source "about\$_")) }
+    if ($art) { Write-Host "  ^ no $($art -join ' or '); not ready to upload" -ForegroundColor Yellow }
 }
 
 ""
 "Staged in $OutDir. To publish:"
-"  .\launch.ps1 -ModDir `"$OutDir`""
+"  .\launch.ps1 -ViaSteam -ModDir `"$OutDir`""
 "  then in the game: Settings -> Mods -> the mod -> publish"
+""
+"-ViaSteam is not optional here. Started as the exe, SteamAPI_Init() fails, and with no Steam"
+"session there is no workshop at all - the publish button is simply not drawn."
 ""
 "A new workshop item is created private (the game calls SetItemVisibility with 2), so it stays"
 "invisible until you make it public on its Steam page."
