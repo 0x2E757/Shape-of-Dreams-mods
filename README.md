@@ -13,6 +13,23 @@ Mods for Shape of Dreams `r.1.3.1.3_s`, built against the game's own assemblies.
 the list in `publish.ps1`, and a version that has shipped is a question for that mod's
 `workshop/changelog.txt`.
 
+## Planned
+
+Nothing below is built yet. The names are settled so that they can be talked about, and all but the
+last have been checked against the game's own code far enough to know where each would hook and
+whether the host would have to install it; [docs/planned.md](docs/planned.md) holds those entry
+points, and says plainly which one has none yet.
+
+| Mod | Runs on | What it would do |
+| --- | --- | --- |
+| `MoreLucidDreams` | host | More run modifiers. The game calls them lucid dreams and ships fifteen, with no cap on how many are active at once. |
+| `PermanentDejavu` | client | Buy a déjà vu item outright instead of renting the right to use it for twenty-four hours. |
+| `CloserSouls` | host | The first death in a region leaves the soul in the room it happened in, the second one room out, the third and later two. |
+| `TransparentEffects` | client | Opacity for skill effects, set separately for your own and for everyone else's. |
+| `BuildWhileDown` | client | Memories and essences can be rearranged while knocked out, instead of only while alive. |
+| `AreMyGemsCompatible` | client | Warns about an essence that can never fire in the memory it is socketed into. |
+| `ParagonLevels` | not looked into | Global progression for completed cycles. Written down as an idea and not yet checked against the game. |
+
 ## Quick start
 
 ```powershell
@@ -72,6 +89,7 @@ matching code.
 | [devtools.md](docs/devtools.md) | The testing overlay, god mode, and the live tuning panel for the slot arrangement |
 | [game-ui.md](docs/game-ui.md) | Reusable ground: shared widgets, localization, the mod config window |
 | [multiplayer.md](docs/multiplayer.md) | How the published mods behave in co-op, and who needs to install what |
+| [planned.md](docs/planned.md) | The seven mods that are named but not built: where each one hooks, and what the game already does |
 | [changelog-format.md](docs/changelog-format.md) | **Follow exactly when releasing.** The changelog template, and the order to do a release in |
 
 A few things that save time and are easy to miss:
