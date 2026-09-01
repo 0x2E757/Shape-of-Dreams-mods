@@ -1,5 +1,10 @@
 # AreMyGemsCompatible
 
+![An essence marked as dead, its icon faded, with the warning in its tooltip](../images/aremygemscompatible-marked.jpg)
+
+*Essence of Love in a memory that neither heals nor grants a barrier: the icon faded to a quarter,
+the mark on it, and the reason under the essence's own description.*
+
 Warns about an essence that can never fire in the memory it is socketed into. Wholly client-side:
 nothing here touches an actor, a stat or a network message.
 
@@ -181,6 +186,12 @@ never claims. `Gem_C_Sharp` fires arrows from `info.instance`; put it in a memor
 damage and the damage-triggered essence beside it works. `Gem_C_Regeneration` does the same with
 healing, which matters more: it and `Gem_C_Guidance` are both common healing essences and pairing
 them is an obvious thing to try.
+
+![The same memory with a second essence in it, and no mark](../images/aremygemscompatible-supplied.jpg)
+
+*The memory from the top of this page, one essence later. `Gem_C_Regeneration` has moved into the
+slot beside Love, and it creates its heal-over-time from the cast's own `AbilityInstance` — so the
+memory heals after all, Love fires, and the mark and the fade are both withdrawn.*
 
 `Verdict.SuppliedBySiblings` handles it. It reads the memory's owner rather than the essence's, so
 the answer is the same whether the essence is socketed or is being dragged over the slot — in which
