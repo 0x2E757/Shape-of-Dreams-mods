@@ -174,6 +174,12 @@ and they are nearly always fine: only five memories a player can socket into dea
 `St_R_Tranquility`. The mod earns its place on the **healing** essences, which are dead in four
 memories out of five and which nothing in the game warns you about.
 
+![A full skill bar with nine essences and no marks on any of them](../images/aremygemscompatible-quiet.jpg)
+
+*Which is to say the mod is silent most of the time, and is meant to be. Nine essences here and
+nothing to report — the loud version of this, marking everything that is merely weaker in its
+memory, would put a badge on half the bar and be worth nothing.*
+
 ## The one way a memory does more than its description says
 
 The three `Gem.Create*WithSource` helpers are each a one-line wrapper —
@@ -187,11 +193,16 @@ damage and the damage-triggered essence beside it works. `Gem_C_Regeneration` do
 healing, which matters more: it and `Gem_C_Guidance` are both common healing essences and pairing
 them is an obvious thing to try.
 
-![The same memory with a second essence in it, and no mark](../images/aremygemscompatible-supplied.jpg)
+![The tooltip of Essence of Regeneration, which restores health when the memory is cast](../images/aremygemscompatible-supplier.jpg)
 
-*The memory from the top of this page, one essence later. `Gem_C_Regeneration` has moved into the
-slot beside Love, and it creates its heal-over-time from the cast's own `AbilityInstance` — so the
-memory heals after all, Love fires, and the mark and the fade are both withdrawn.*
+*The essence that does it. It is not a healing memory that saves Love here — the memory heals
+nothing on its own — it is this, moving into the slot beside it.*
+
+![The same memory with both essences in it, and no mark](../images/aremygemscompatible-supplied.jpg)
+
+*And the result. `Gem_C_Regeneration` creates its heal-over-time from the cast's own
+`AbilityInstance`, so the memory heals after all, Love fires, and the mark and the fade are both
+withdrawn.*
 
 `Verdict.SuppliedBySiblings` handles it. It reads the memory's owner rather than the essence's, so
 the answer is the same whether the essence is socketed or is being dragged over the slot — in which
