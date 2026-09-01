@@ -123,8 +123,8 @@ it from then on. Delete it and the next upload publishes a duplicate rather than
 
 ## Art tooling
 
-`tools/` also holds the two scripts that turn source artwork into what the mods ship. Neither runs at
-build time — the artwork changes rarely, and the results are committed.
+`tools/` also holds the two scripts that turn source artwork into what the mods ship. Neither runs
+at build time — the artwork changes rarely, and the results are committed.
 
 ```powershell
 # icon.png (128x128) and preview.png (636x358) for the mod manager, from square and 16:9 sources
@@ -137,6 +137,6 @@ build time — the artwork changes rarely, and the results are committed.
 `make-autocast-icons.ps1` expects six files named `autocast_{off,on,locked}_{ring,arrows}.png`. The
 source artwork itself is not in the repo; the sprites and images it produces are.
 
-Both share a resampler, and that is the point of them. See **Icons** in [autocast.md](autocast.md) for why the obvious
-`System.Drawing` call is not good enough.
+Both share a resampler, and that is the point of them. See **Icons** in
+[autocast.md](autocast.md) for why the obvious `System.Drawing` call is not good enough.
 

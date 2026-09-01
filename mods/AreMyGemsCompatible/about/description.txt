@@ -1,0 +1,20 @@
+Warns about an essence that can never fire in the memory it is socketed into - one waiting for damage in a memory that deals none, or for healing in a memory that never heals.
+
+[h2]What it marks[/h2]
+[list]
+[*]A mark on the slot, with the essence's own icon faded behind it, so a dead essence is visible across the whole bar without hovering anything
+[*]A line in the essence's tooltip saying which of the three it is waiting for - including while you are dragging it over a slot, so you are told before the swap rather than after
+[/list]
+
+The mark pulses only while you are not editing your loadout, and gets out of the way of the artwork on the editing screen.
+
+[h2]What it does not mark[/h2]
+An essence that would merely be [i]worse[/i] in this memory is left alone. Many essences do two things at once - amplify the memory's damage and grant you flat Maximum Health, say - and only the half that waits on the memory can starve. A warning on those would appear on half the loadout and drown the ones that matter.
+
+It is quiet by design: of every essence that can be put in every memory, about one pairing in ten is marked.
+
+[h2]In co-op[/h2]
+[b]Only you need it.[/b] Nothing is sent anywhere: it reads what you already have equipped and draws a sentence.
+
+[h2]Source code[/h2]
+[url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]

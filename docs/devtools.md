@@ -118,6 +118,20 @@ in a finished mod. They are worth knowing about if this ever needs revisiting:
   `SelectSkillAndLevel`, then `Dew.CreateGem` / `Dew.CreateSkillTrigger` at a position from
   `Dew.GetGoodRewardPosition`) and for setting `hero.Status.level` directly — which has a public
   setter, though writing it skips the usual level-up rewards.
+- **A second tuning section, for `AreMyGemsCompatible`'s dead-essence mark**, built the same way as
+  the gem one below and removed once its eleven numbers had settled — offsets for the resting and
+  editing states, size, how far the essence icon fades behind it, two ends and a speed for its
+  pulse, and size and baseline offset for the copy that goes inline in the tooltip. It bound to
+  `BadgeAppearance` exactly as `GemTuning` binds to `GemArrangement`, and those numbers are `const`
+  again now.
+
+  Worth rebuilding if the mark's artwork changes, and cheap to: `BadgeTuning.cs` was a copy of
+  `GemTuning.cs` with the type name swapped and the two-target and paging code dropped, and the
+  panel section was a `NumberRow` per float found by reflection. Two things it did that the gem
+  section does not need: it clamped four of the numbers on the way in — a zero size or a zero alpha
+  is not a small mark but a vanished one, which reads as a broken mod rather than a wrong number —
+  and it kept the clamps on its own side, since it is the stepper that can walk a number off its
+  end and the shipped values never do.
 
 The pattern worth keeping: on-screen controls wired to live values, with a button that dumps
 them to the log in a form that can be pasted back into the source. Guessing geometry from a
@@ -256,4 +270,3 @@ reload without becoming things to edit by hand.
 
 `Input.GetKeyDown` is the legacy input API, which is safe here because the game itself uses it —
 `ConsoleManager.FrameUpdate` is built on it.
-

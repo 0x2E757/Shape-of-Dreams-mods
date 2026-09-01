@@ -11,6 +11,7 @@ Mods for Shape of Dreams `r.1.3.1.3_s`, built against the game's own assemblies.
 | `TransparentEffects` | yes | Skill effects can be made see-through, your own and other players' set separately. |
 | `CloserSouls` | yes | A knocked-out player's soul is left closer — by default the first death of a region right where it happened. |
 | `BuildWhileDown` | yes | Memories and essences can be rearranged while knocked out, not only while alive. |
+| `AreMyGemsCompatible` | yes | Marks an essence that can never fire in the memory it is socketed into — one waiting for damage in a memory that deals none, or for healing in a memory that never heals. |
 | `DevTools` | no | An overlay for testing the others: hero level, god mode, spawning memories and essences, ending a run, and live tuning of the slot arrangement. |
 
 *Workshop* is whether a mod is meant to go up at all, not whether it is up today — the column is
@@ -19,8 +20,8 @@ the list in `publish.ps1`, and a version that has shipped is a question for that
 
 ## Planned
 
-Nothing below is built yet. The names are settled so that they can be talked about, and all but the
-last have been checked against the game's own code far enough to know where each would hook and
+Nothing below is built yet. The names are settled so that they can be talked about, and the first
+two have been checked against the game's own code far enough to know where each would hook and
 whether the host would have to install it; [docs/planned.md](docs/planned.md) holds those entry
 points, and says plainly which one has none yet.
 
@@ -28,7 +29,6 @@ points, and says plainly which one has none yet.
 | --- | --- | --- |
 | `MoreLucidDreams` | host | More run modifiers. The game calls them lucid dreams and ships fifteen, with no cap on how many are active at once. |
 | `PermanentDejavu` | client | Buy a déjà vu item outright instead of renting the right to use it for twenty-four hours. |
-| `AreMyGemsCompatible` | client | Warns about an essence that can never fire in the memory it is socketed into. |
 | `ParagonLevels` | not looked into | Global progression for completed cycles. Written down as an idea and not yet checked against the game. |
 
 ## Quick start
@@ -36,7 +36,7 @@ points, and says plainly which one has none yet.
 ```powershell
 .\tools\build.ps1     # Debug; -Configuration Release for the other
 .\tools\launch.ps1    # runs the game with -moddir pointed at mods\
-.\tools\publish.ps1   # stages the seven published mods into dist\
+.\tools\publish.ps1   # stages the eight published mods into dist\
 ```
 
 Then enable the mods in the in-game mod manager. The player log is at
@@ -51,8 +51,10 @@ install elsewhere needs no edit to a tracked file:
 dotnet build -p:GameDir="D:\Games\Shape of Dreams"
 ```
 
-`tools/` also holds the two art scripts that turn source artwork into what the mods ship. Neither
-runs at build time; the results are committed.
+`tools/` also holds the two art scripts that turn source artwork into what the mods ship, and
+`verify-gem-classification.ps1`, which runs `AreMyGemsCompatible`'s rules over every essence and
+memory in the game without launching it. None of them run at build time; the art results are
+committed.
 
 ## Layout
 
@@ -65,9 +67,10 @@ mods/                what -moddir points at
   TransparentEffects/  workshop
   CloserSouls/       workshop
   BuildWhileDown/    workshop
+  AreMyGemsCompatible/  workshop
   DevTools/          local only; the testing tool for the others
   Shared/            compiled into each mod, not shipped as a library
-tools/               build, launch, publish, and the two art scripts
+tools/               build, launch, publish, the art scripts, and one verification script
 docs/                the notes listed below
 images/              screenshots, embedded in the docs
 dist/                publish.ps1 output; not committed
@@ -95,10 +98,11 @@ matching code.
 | [transparenteffects.md](docs/transparenteffects.md) | The resource variant system, the four ids of six that are honoured, and which shader property carries opacity |
 | [closersouls.md](docs/closersouls.md) | Where a soul is placed, the node the search cannot return, and adding a room modifier to a live room |
 | [buildwhiledown.md](docs/buildwhiledown.md) | The four refusals between a downed player and their loadout, why transpilers rather than a gate, and the drops that stay shut |
+| [aremygemscompatible.md](docs/aremygemscompatible.md) | What an essence waits for and how it is read from IL, why the memory side comes from the game's English data dump, and the word boundaries that decide it |
 | [devtools.md](docs/devtools.md) | The testing overlay, god mode, and the live tuning panel for the slot arrangement |
 | [game-ui.md](docs/game-ui.md) | Reusable ground: shared widgets, localization, the mod config window |
 | [multiplayer.md](docs/multiplayer.md) | How the published mods behave in co-op, and who needs to install what |
-| [planned.md](docs/planned.md) | The four mods that are named but not built: where each one hooks, and what the game already does |
+| [planned.md](docs/planned.md) | The three mods that are named but not built: where each one hooks, and what the game already does |
 | [changelog-format.md](docs/changelog-format.md) | **Follow exactly when releasing.** The changelog template, and the order to do a release in |
 
 A few things that save time and are easy to miss:

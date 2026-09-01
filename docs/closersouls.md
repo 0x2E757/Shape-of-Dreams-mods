@@ -97,7 +97,7 @@ already been set, so this asks whether anyone is left to come and fetch you.
 That second guard has a consequence worth stating plainly: **this mod cannot be seen working
 alone.** A solo player who is knocked out leaves nobody alive, the count is nought, no soul is
 placed by anyone, and the run ends. Every line of it needs a second player breathing, which makes it
-the only one of the seven that cannot be checked in a single-player run at all.
+the only one of the eight that cannot be checked in a single-player run at all.
 
 ## What the quest already handles
 

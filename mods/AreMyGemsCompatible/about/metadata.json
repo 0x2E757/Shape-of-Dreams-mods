@@ -1,0 +1,12 @@
+{
+  "id": "com.remouq.aremygemscompatible",
+  "name": "AreMyGemsCompatible",
+  "author": "Remouq",
+  "modVer": "1.0",
+  "supportedGameVer": [
+    "*"
+  ],
+  "assemblies": [
+    "bin/Debug/netstandard2.1/AreMyGemsCompatible.dll"
+  ]
+}
