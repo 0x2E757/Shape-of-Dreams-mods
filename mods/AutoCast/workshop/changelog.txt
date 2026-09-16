@@ -1,3 +1,8 @@
+[h2]1.2[/h2]
+[list]
+[*]Fixed: Apple of Discord switched its slot's autocast off in every room, once when it swapped the memory out and again when the original came back — a memory the game replaces where it sits now keeps the slot's setting
+[/list]
+
 [h2]1.1[/h2]
 [list]
 [*]Autocast now belongs to the memory rather than to the cell: carry a memory to another cell and its toggle travels with it, and swapping two memories swaps both settings

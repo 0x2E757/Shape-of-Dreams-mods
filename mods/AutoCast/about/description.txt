@@ -3,7 +3,7 @@ Puts a small toggle above each of your Q, W, E and R cells. While one is lit, th
 The toggles only answer the mouse while you hold the inspect key, so one cannot be hit by accident in a fight. Targets are picked with the game's own aim prediction, so projectiles lead a moving target rather than firing at where it used to be.
 
 [h2]What stays switched on[/h2]
-Autocast belongs to the memory rather than to the slot. Carry a memory to another cell and its toggle travels with it; swap two memories and both settings swap too. A memory that was not on your bar a moment ago arrives switched off, so something just picked up never starts casting on its own.
+Autocast belongs to the memory rather than to the slot. Carry a memory to another cell and its toggle travels with it; swap two memories and both settings swap too. A memory that was not on your bar a moment ago arrives switched off, so something just picked up never starts casting on its own. The one exception is a memory the game swaps in by itself — Apple of Discord replaces the memory it sits in every room — which keeps whatever the slot was set to.
 
 Starting a new game clears all four. Resuming a saved run does not — it comes back exactly as you left it.
 

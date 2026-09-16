@@ -293,6 +293,9 @@ namespace AutoCast
         // empty while a memory is being moved, and on a zone change the whole hero is gone for a
         // few frames; the control is hidden while a slot is empty anyway, and a memory put back
         // later is supposed to bring its setting with it.
+        //
+        // One replacement is not the player's doing: a memory the game destroys in its slot and
+        // puts another in its place. That one keeps the slot's setting - see WasDestroyed.
         private void TrackEquipped(Hero hero)
         {
             var skill = hero != null ? hero.Skill : null;
@@ -303,7 +306,16 @@ namespace AutoCast
             {
                 var equipped = skill.GetSkill(Slots[i]);
                 _current[i] = ActorCheck.IsNullOrInactive(equipped) ? null : equipped;
-                if (_current[i] != null && (!_seen[i] || _equipped[i] != _current[i])) changed = true;
+                if (_current[i] != null)
+                {
+                    if (!_seen[i] || _equipped[i] != _current[i]) changed = true;
+                }
+                else if (_seen[i] && WasDestroyed(i))
+                {
+                    // An empty slot whose remembered memory has just been destroyed is a change
+                    // too, or Commit would never get to forget it.
+                    changed = true;
+                }
             }
 
             if (!changed) return;
@@ -323,9 +335,20 @@ namespace AutoCast
                 // A slot being looked at for the first time keeps what was saved for it: that is
                 // the frame the mod loads on, and the frame a continued run comes up on, and in
                 // both the stored setting already belongs to the memory that is there.
+                //
+                // So does a slot whose last memory was destroyed where it sat rather than taken
+                // out: the game swapped it, not the player, and the setting was never theirs to
+                // lose. And so does a slot holding the essence that does the swapping, whatever
+                // the old memory looks like - see SwapsItsMemory.
+                bool destroyed = from < 0 && _seen[i] && WasDestroyed(i);
+                bool swapper = from < 0 && _seen[i] && !destroyed && SwapsItsMemory(skill, Slots[i]);
+                bool replaced = destroyed || swapper;
                 bool on = from >= 0 ? _wasOn[from]
-                        : _seen[i] ? false
-                        : _wasOn[i];
+                        : !_seen[i] || replaced ? _wasOn[i]
+                        : false;
+
+                if (replaced)
+                    Debug.Log($"[AutoCast] {Slots[i]}: memory replaced in place ({(destroyed ? "old one destroyed" : "slot holds a swapping essence")}), autocast {(on ? "kept" : "stays off")}");
 
                 wrote |= Assign(Slots[i], on);
             }
@@ -363,7 +386,11 @@ namespace AutoCast
                 // Unless that memory has turned up in another slot. Then it lives there and took
                 // its setting with it, so this slot is left holding neither - and the setting has
                 // to go, or the next memory dropped in here would inherit it.
-                if (_seen[i] && IsOnBar(_equipped[i]))
+                //
+                // Or unless it is gone for good - dismantled, sold, or left on the floor of a
+                // room that has since been unloaded. It cannot come back, and a record of it
+                // would make the next memory equipped here read as the game's own replacement.
+                if (_seen[i] && (IsOnBar(_equipped[i]) || WasDestroyed(i)))
                 {
                     _equipped[i] = null;
                     wrote |= Assign(Slots[i], false);
@@ -381,6 +408,54 @@ namespace AutoCast
             if (skill == null) return false;
             for (int i = 0; i < Slots.Length; i++)
                 if (_current[i] == skill) return true;
+            return false;
+        }
+
+        // Whether the memory this slot held a moment ago has been destroyed, as opposed to moved
+        // or dropped. The player never destroys a memory in its slot - taking one out drops it
+        // into the world alive, and a swap keeps both - so a destroyed occupant with something
+        // new in its place is the game's own doing.
+        //
+        // Apple of Discord (Gem_L_ChaosApple) is the case this exists for. Every room it destroys
+        // the memory it is socketed into and equips a random stand-in, and once the stand-in's
+        // charges are spent it destroys that too and recreates the original from a save. Two new
+        // SkillTrigger instances a room, each of which used to read as a memory that was not on
+        // the bar a moment ago and switched the slot off.
+        //
+        // Destroyed is read as inactive rather than as Unity-null. Dew.Destroy takes the object
+        // down some time later, but marks the actor inactive the moment its routine is allowed
+        // to start - which is at once outside a room transition, and both of the Apple's swaps
+        // wait for the transition to end. The flag is a SyncVar, so a client sees it in the same
+        // batch as the replacement. A record Commit has already dropped is a plain null, which
+        // is not a destroyed memory and does not count.
+        private bool WasDestroyed(int i)
+        {
+            var previous = _equipped[i];
+            return !ReferenceEquals(previous, null) && ActorCheck.IsNullOrInactive(previous);
+        }
+
+        // Whether the slot holds an essence that replaces the memory it is socketed into on its
+        // own. The second reading of the same event, for the frames the first cannot see: the
+        // destroy routine is held back while a guest is still loading the room, and a guest may
+        // in principle receive the replacement before the old memory's inactive flag. Essences
+        // are keyed by slot in HeroSkill.gems and stay put through a swap, so this reading
+        // depends on neither timing nor the network.
+        //
+        // The cost is that while the essence sits there, a memory the player puts into that slot
+        // inherits its setting too, since a dropped old memory and one whose destroy is late look
+        // the same. Accepted: the essence rotates the slot's memory every room anyway, and a lit
+        // toggle is visible and one click to clear.
+        //
+        // Apple of Discord is the only such essence in r.1.3.1.3_s, so it is named rather than
+        // detected; finding others would mean scanning gem types for EquipSkill calls, the way
+        // AreMyGemsCompatible reads them, and there is nothing yet to find.
+        private static bool SwapsItsMemory(HeroSkill skill, HeroSkillLocation slot)
+        {
+            foreach (var pair in skill.gems)
+            {
+                if (pair.Key.skill != slot) continue;
+                if (pair.Value is Gem_L_ChaosApple) return true;
+            }
             return false;
         }
 

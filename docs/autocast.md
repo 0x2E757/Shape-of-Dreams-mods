@@ -271,15 +271,60 @@ The details that took a test to get right:
   already belongs to the memory that is there. Tracked with a flag rather than by testing the
   remembered trigger against null, because a *destroyed* trigger also reads as null.
 
+**A memory the game destroys where it sits.** Reported from the workshop a fortnight after 1.1
+shipped: with Apple of Discord socketed, the toggle went off on every room, twice. The essence
+(`Gem_L_ChaosApple`) is the one thing in the game that replaces a memory without the player
+touching it. On each room load it destroys the memory it sits in and equips a random stand-in
+with a few charges and a locked cooldown; when the charges are spent — or the player pulls the
+stand-in out — it destroys that too and recreates the original from a `DewPersistence` capture.
+Two fresh `SkillTrigger` instances a room, and each was, by the rule above, "a memory that was not
+on the bar a moment ago".
+
+The rule was right and the reading was too narrow. What the player does to a memory never
+destroys it: `UnequipSkill` drops the trigger into the world alive, a swap keeps both, and
+`EquipSkill` into an occupied slot unequips the occupant first. So **a slot whose last memory is
+destroyed and which now holds something new was replaced by the game, and keeps its setting.**
+Destroyed is read as `ActorCheck.IsNullOrInactive` on the remembered trigger rather than as
+Unity-null: `Dew.Destroy` takes the object down on a coroutine some time later, but marks the
+actor inactive through `ICleanup.OnCleanup` the moment the routine is allowed to start, which is
+immediately unless a room transition is in progress — and both of the Apple's swaps wait for the
+transition to end. `isActive` is a SyncVar, so a guest sees it in the same batch as the
+replacement. The limit is the case where the destroy is held back and the stand-in is observed
+first: on its own, that would read as the player's doing.
+
+So the same event has a second reading that depends on neither timing nor the network: **the slot
+holds the essence that does the swapping.** Essences are keyed by slot in `HeroSkill.gems` and stay
+put through a swap, so if the old memory has left the bar and the slot's essences include
+`Gem_L_ChaosApple`, the replacement is the game's whichever frame it is seen on. The essence is
+named rather than detected, because it is the only one of its kind in `r.1.3.1.3_s`; finding others
+would mean scanning gem types for `EquipSkill` calls, the way `AreMyGemsCompatible` reads them, and
+there is nothing yet to find.
+
+The second reading has a cost the first does not: while the essence sits in a slot, a memory the
+player puts there by hand inherits the slot's setting too, since a dropped old memory and one whose
+destroy is late look the same. Accepted knowingly — the essence rotates that slot's memory every
+room, nobody rearranges a bar around it, and a lit toggle is visible and one click to clear.
+
+The consequence for emptied slots: a remembered memory that has been destroyed — dismantled,
+sold, left on the floor of a room since unloaded — is forgotten and its slot switched off, where
+before it was kept in case it came back. It cannot come back, and a kept record would make the
+next memory equipped there look like the game's own replacement. An empty slot in that state has
+to count as a change, or the pass that forgets it never runs; that was the one the harness
+caught this time.
+
 Both checks run before the gates on combat, channelling and cutscenes rather than after: a run is
 entered dead, and memories are moved outside combat.
 
 The state machine is small and every one of the rules above is a case that can be got wrong
 silently, so it was transcribed into a plain console program and run against the scenarios —
 a move, a three-way rotation, a move plus a new memory in one frame, a drop and a pickup
-elsewhere, a stale record, a mid-run load, a new run, a resumed run. Two failed the first time and
-the resume case was added after it was reported from a real session; each was checked to fail
-without its fix before being kept, since a scenario that passes either way is worth nothing. That
-harness is not in the repository: it needs no Unity and no game, and rewriting it from this section
-is a few minutes' work if these rules ever change.
+elsewhere, a stale record, a mid-run load, a new run, a resumed run, and now the Apple's two swaps,
+a dismantle followed by a new memory, a memory left behind in a room, an Apple swap in one slot
+while the player moves another, a late destroy with and without the essence in the slot, and a
+memory put by hand into the essence's slot. Two failed the first time and the resume case was added
+after it was reported from a real session; each was checked to fail without its fix before being
+kept, since a scenario that passes either way is worth nothing. That harness is not in the
+repository: it needs no Unity and no game, and rewriting it from this section is a few minutes'
+work if these rules ever change. The fake trigger it needs has two flags — *inactive* and
+*gone* — because the two are read differently, and Unity's `==` treats a gone one as null.
 
