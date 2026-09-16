@@ -35,6 +35,7 @@ way round precisely because they are published.
 | God mode | A granted `StatBonus` large enough that rooms stop being obstacles — see below |
 | Spawn random memory | A real loot-pool roll at that level |
 | Spawn random essence | The same, at that quality |
+| Spawn Apple of Discord | That one essence by name (`Gem_L_ChaosApple`), for checking AutoCast's in-place replacement rule |
 | Knock out hero | `Entity.Kill()`, and the run it ends awards 0 mastery points |
 | Room node | Which node the button below acts on; stepping it names the room under it |
 | Forget that node's room | Clears one node's remembered room — see below |

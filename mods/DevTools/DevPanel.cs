@@ -132,6 +132,8 @@ namespace DevTools
             {
                 ActionButton(_box, "Spawn random memory", () => DevActions.SpawnMemory(_config.itemLevel)),
                 ActionButton(_box, "Spawn random essence", () => DevActions.SpawnEssence(_config.itemLevel)),
+                ActionButton(_box, "Spawn Apple of Discord",
+                             () => DevActions.SpawnEssence("Gem_L_ChaosApple", _config.itemLevel)),
                 ActionButton(_box, "Knock out hero", DevActions.KillHero),
                 ActionButton(_box, "Forget that node's room",
                              () => DevActions.ClearRoomSaveData(_config.roomNode)),

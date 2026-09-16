@@ -118,6 +118,21 @@ namespace DevTools
             return $"essence {template.GetType().Name} q{Mathf.Max(1, quality)}";
         }
 
+        // A named essence rather than a rolled one, for the cases a mod has to be checked against
+        // one essence in particular. Apple of Discord is the first: it is the only essence that
+        // replaces the memory it sits in on its own, and AutoCast has a rule written for it. The
+        // loot pool looks its templates up the same way, by short type name.
+        public static string SpawnEssence(string typeName, int quality)
+        {
+            if (!CanAct(out string reason)) return reason;
+
+            var template = DewResources.GetByShortTypeName<Gem>(typeName);
+            if (template == null) return $"no essence named {typeName}";
+
+            Dew.CreateGem(template, SpawnPosition(), Mathf.Max(1, quality), LocalPlayer, null);
+            return $"essence {template.GetType().Name} q{Mathf.Max(1, quality)}";
+        }
+
         private static Vector3 SpawnPosition()
         {
             return Dew.GetGoodRewardPosition(LocalHero.agentPosition, SpawnSpread);
