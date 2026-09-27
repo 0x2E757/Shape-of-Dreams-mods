@@ -30,6 +30,12 @@ $ErrorActionPreference = "Stop"
 $exe = Join-Path $GameDir "Shape of Dreams.exe"
 if (-not (Test-Path $exe)) { throw "Game not found at $exe" }
 
+# Made absolute here, because the game resolves -moddir against its own working directory, which
+# is the install folder rather than this one. Passed as .\dist it looks for <install>\dist, finds
+# nothing, and starts with no mods at all - silently, since an empty mod folder is not an error.
+if (-not (Test-Path $ModDir)) { throw "No mod directory at $ModDir" }
+$ModDir = (Resolve-Path $ModDir).Path
+
 if (-not (Get-Process -Name steam -ErrorAction SilentlyContinue)) {
     Write-Warning "Steam does not appear to be running; the game may fail to initialise."
 }
