@@ -421,6 +421,105 @@ essence in an identity that deals no damage leaves both of them dead, and says s
 Identity is where the mod now says the most, and almost all of it is the cast: thirty-one essences
 wait on nothing else, and each of them is dead in every identity there is.
 
+## Essences that wait for one element
+
+**Damage was treated as one thing, and for four essences it is not.** Essence of Frost in
+Incendiary Rounds was reported as doing nothing and not marked: the memory deals damage, so the
+damage question said yes. `Gem_R_Frost.OnDealDamage` opens with `obj.damage.elemental ==
+ElementalType.Cold` and does nothing else, and Incendiary Rounds deals only Fire damage — its
+description says so, its tags say so, and `Ai_Q_IncendiaryRounds_Attack` sets `ElementalType.Fire`.
+
+| essence | waits for | what else it does in the slot |
+| --- | --- | --- |
+| `Gem_R_Frost` | Cold damage | nothing |
+| `Gem_E_Apathy` | Cold damage | its drawback, a reduction on all the hero's damage, is always on |
+| `Gem_E_Fever` | Fire damage | nothing |
+| `Gem_R_Lava` | Fire damage, from the cast's own instance | spends its cooldown on the cast, to no effect |
+
+### A table, and why
+
+Everywhere else the mod reads code rather than naming essences, so that one another mod adds is
+judged like a shipped one. Here the thing to tell apart is not a member name but the shape of a
+branch: fourteen shipped essences compare an element, and most only pick a larger number with it
+(`Gem_R_NightSky`, `Gem_C_Shatter`, `Gem_U_GlacialCore`). Three look gated and are not:
+
+- `Gem_U_EternalFlame` checks Fire only for its curse; its amplification works on any damage the
+  memory deals to a burning target, and targets burn from other memories too.
+- `Gem_E_Umbra` checks Dark only for its heal; the crit amplification is unconditional.
+- `Gem_R_Flow` listens on the hero, not the memory, for Light damage from anywhere.
+
+So `ElementGates` names the four, and an essence that is not in it is judged as before — the quiet
+direction.
+
+**Frost was silenced everywhere, for another reason.** Its `OnEquipGem` creates
+`Se_Gem_R_Frost_Stat` on the hero, which `ReadEquipGem` took for a hook on the hero and made the
+essence always live, in every memory including those that deal no damage. It is a
+`PersistentStatBonusEffect` created empty; the Maximum Health in it is added only when the essence
+fires. An essence in the element table is, by the table's own definition, wholly behind its
+element, so nothing read out of its code makes it live — `enableStatBonus`, prefab data, is still
+honoured. `Gem_E_Predation` has the same kind of holder and really is live everywhere: it tracks
+the hero's kills.
+
+### What a memory deals
+
+The union of three sources, because each can only err by missing an element, and a missing element
+is exactly a false warning:
+
+1. **The dump** — `(Fire|Cold|Light|Dark) damage` in the description, and the element among the
+   tags.
+2. **Its code** — every constant handed to `DamageData.SetElemental` in its `Ai_`/`Se_` types and in
+   whatever they create. The compiler writes `SetElemental(ElementalType.Cold)` as `ldc.i4.1; newobj
+   Nullable<ElementalType>; call`, so the constant is read off the IL. An element that comes out of
+   a variable makes the whole answer unknown.
+3. **Its prefabs** — a `DamageInstance`'s `applyElemental` and `elemental` are authored there and in
+   no code, so the prefab is loaded and asked, in game.
+
+A passive memory is unknown outright: it passes on the hero's own damage.
+
+An offline scan of every method in `Dew.Core` and `Dew.Contents` found every constant in (2) already
+named by (1); a Debug build's audit at load, which does (3) as well, found two exceptions among 154
+memories. `St_D_SharedPain` copies the element of the hit it repeats — unknown, so quiet.
+`St_C_Sneeze`, "completely useless", has a rare chance to fire `Ai_Mon_Sky_BigBaam_BeamAtk`, a
+monster's Light beam — the union includes it. (That beam is also damage the damage question does
+not know about; the damage verdict for Sneeze is not changed here.)
+
+### What else can give the damage an element
+
+`SetElemental` is the one way an element is written, and outside the memories' own code it is
+called by essences (Sulfur and Abyss convert to Fire and Dark, Inversion swaps Fire with Cold and
+Light with Dark), status effects on the hero (a Husk star that makes her damage Dark, several
+memories' buffs), `RoomMod_InversionSigil` (swaps every element in the room and gives damage with
+none a random one) and hazards, which deal their own damage.
+
+At the moment of the verdict the essences beside it, the hero's status effects and the room's
+modifiers are each asked **which elements they can write** — the same constant reading, followed
+through what they create — and those are added to the memory's. So Frost beside Inversion is quiet,
+and Frost beside Sulfur is still marked: Sulfur only ever writes Fire. Anything that writes from a
+variable (Pain copying the hit's, the sigil's random pick), and any sibling that supplies damage
+through the cast, makes the answer unknown.
+
+**Following creations matters for siblings as much as for memories.** `Gem_C_Charcoal`'s own code
+has no element in it; the projectile it fires, `Ai_Gem_C_Charcoal_Projectile`, deals Fire damage
+parented under the memory. Reading only the essence would have marked Fever beside it in a memory
+with no element, and Fever works there.
+
+It is asked of what a client can see. The damage processors that actually change the element are
+registered on the server, and a guest's copy of the hero carries none of them; status effects and
+room modifiers are synced actors.
+
+### What it adds up to
+
+A Debug build counts, at load, every essence prefab against every memory the dump knows, each pair
+on its own: **103 essences × 154 memories, 1884 of 15862 pairs dead — about one in eight — and 419 of
+them by element.** Over memories that are cast it is 928 of 13493. Frost, Apathy and Fever are each
+dead in about 120 of the 152 known memories, which is the honest figure: the essences' own
+descriptions say "when this Memory deals Cold damage", and most memories deal damage of no element.
+
+The five cases the change was built for — Frost in Incendiary Rounds and in Ice Claw, beside
+Inversion and beside Sulfur, and Fever beside Charcoal in a memory with no element — were set up and
+read back through DevTools' command server ([devtools.md](devtools.md)), tooltip and slot mark
+included.
+
 ## Where the warning appears
 
 `UI_Tooltip_GemDescription` is the one object that draws an essence's text, and it draws it in
@@ -563,16 +662,24 @@ applies the same regexes to `memories.json`, reads every identity memory's code 
 
 It opens with the identity audit — each identity's damage, healing and barrier as the code finds
 them, in capitals, and in lower case where only the prose claims one — and then prints the numbers
-that have to hold. At the time of writing they are 105 essences with 62 entirely slot-scoped, 152
-known memories (128 Q/W/E/R, 15 identity, 9 Movement), and 19 essences that hand a capability to
-their memory; with `-Pairs` it names every supplier and what it supplies. It re-measures a changed
+that have to hold. At the time of writing they are 105 essences with 63 entirely slot-scoped (62
+before Frost stopped reading as live), 152 known memories (128 Q/W/E/R, 15 identity, 9 Movement),
+19 essences that hand a capability to their memory, and 1647 warned pairs of which 437 are by
+element; with `-Pairs` it names every supplier and what it supplies. It re-measures a changed
 rule against every essence in the game in a few seconds instead of by playing, which is how each
 of the supplier bugs above was found: none of them showed up as a wrong number in the other two
 counts.
 
 **It is the mod's logic restated, not the mod itself** — the cost of running without Unity
 around — so a rule changed in one has to be changed in the other, and the tables are what makes a
-disagreement visible. Three things it cannot see the way the game does:
+disagreement visible. Four things it cannot see the way the game does:
+
+- A memory's elements beyond its description and tags. The game adds its code's constants and its
+  prefabs' elements, which add nothing but Sneeze's Light beam. The script counts 437 pairs dead by
+  element where the game's own count is 419; the two are not counted over the same sets - the game
+  has 103 essence prefabs to the script's 105 types, 154 memories to its 152 known, and silences
+  whatever `enableStatBonus` makes live - so the figures are close rather than equal. Siblings,
+  statuses and the room are not modelled either.
 
 - `enableStatBonus`, which is prefab data: `Gem_E_Might` and `Gem_E_Apathy` appear warnable there
   and are silenced in game.

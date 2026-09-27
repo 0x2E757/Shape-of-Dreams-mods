@@ -31,6 +31,12 @@ namespace AreMyGemsCompatible
         public const string NoCastOrShield = "warn.cast.shield";
         public const string Never = "warn.generic";
 
+        // An essence that waits for one element, in a memory that deals damage but never of that
+        // element. The element's name is the game's own in each language, taken from how
+        // RawData\<language>\essences.json words Essence of Frost and Essence of Fever.
+        public const string NoCold = "warn.cold";
+        public const string NoFire = "warn.fire";
+
         public const string SettingBadge = "settings.badge";
         public const string SettingTooltip = "settings.tooltip";
 
@@ -48,6 +54,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>Never triggers here</b>: this memory is never cast.",
                     [NoCastOrDamage] = "<b>Never triggers here</b>: this memory is never cast and deals no damage.",
                     [NoCastOrShield] = "<b>Never triggers here</b>: this memory is never cast and grants no barrier.",
+                    [NoCold] = "<b>Never triggers here</b>: this memory deals no Cold damage.",
+                    [NoFire] = "<b>Never triggers here</b>: this memory deals no Fire damage.",
                     [SettingBadge] = "Mark the slot",
                     [SettingTooltip] = "Add a line to the tooltip",
                 },
@@ -62,6 +70,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>Здесь не сработает</b>: эта память никогда не применяется.",
                     [NoCastOrDamage] = "<b>Здесь не сработает</b>: эта память никогда не применяется и не наносит урона.",
                     [NoCastOrShield] = "<b>Здесь не сработает</b>: эта память никогда не применяется и не даёт барьера.",
+                    [NoCold] = "<b>Здесь не сработает</b>: эта память не наносит урона от холода.",
+                    [NoFire] = "<b>Здесь не сработает</b>: эта память не наносит урона от огня.",
                     [SettingBadge] = "Отмечать слот",
                     [SettingTooltip] = "Добавлять строку в подсказку",
                 },
@@ -76,6 +86,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>Löst hier nie aus</b>: Diese Erinnerung wird nie eingesetzt.",
                     [NoCastOrDamage] = "<b>Löst hier nie aus</b>: Diese Erinnerung wird nie eingesetzt und verursacht keinen Schaden.",
                     [NoCastOrShield] = "<b>Löst hier nie aus</b>: Diese Erinnerung wird nie eingesetzt und gewährt keine Barriere.",
+                    [NoCold] = "<b>Löst hier nie aus</b>: Diese Erinnerung verursacht keinen Kälteschaden.",
+                    [NoFire] = "<b>Löst hier nie aus</b>: Diese Erinnerung verursacht keinen Feuerschaden.",
                     [SettingBadge] = "Slot markieren",
                     [SettingTooltip] = "Zeile im Tooltip ergänzen",
                 },
@@ -90,6 +102,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>Nunca se activa aquí</b>: esta memoria nunca se lanza.",
                     [NoCastOrDamage] = "<b>Nunca se activa aquí</b>: esta memoria nunca se lanza ni inflige daño.",
                     [NoCastOrShield] = "<b>Nunca se activa aquí</b>: esta memoria nunca se lanza ni otorga barrera.",
+                    [NoCold] = "<b>Nunca se activa aquí</b>: esta memoria no inflige daño de frío.",
+                    [NoFire] = "<b>Nunca se activa aquí</b>: esta memoria no inflige daño de fuego.",
                     [SettingBadge] = "Marcar la ranura",
                     [SettingTooltip] = "Añadir una línea a la descripción",
                 },
@@ -104,6 +118,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir n'est jamais lancé.",
                     [NoCastOrDamage] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir n'est jamais lancé et n'inflige aucun dégât.",
                     [NoCastOrShield] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir n'est jamais lancé et n'accorde pas de barrière.",
+                    [NoCold] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir n'inflige aucun dégât de givre.",
+                    [NoFire] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir n'inflige aucun dégât de feu.",
                     [SettingBadge] = "Marquer l'emplacement",
                     [SettingTooltip] = "Ajouter une ligne à l'infobulle",
                 },
@@ -118,6 +134,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>Non si attiva mai qui</b>: questo ricordo non viene mai lanciato.",
                     [NoCastOrDamage] = "<b>Non si attiva mai qui</b>: questo ricordo non viene mai lanciato né infligge danni.",
                     [NoCastOrShield] = "<b>Non si attiva mai qui</b>: questo ricordo non viene mai lanciato né concede barriere.",
+                    [NoCold] = "<b>Non si attiva mai qui</b>: questo ricordo non infligge danno da gelo.",
+                    [NoFire] = "<b>Non si attiva mai qui</b>: questo ricordo non infligge danno da fuoco.",
                     [SettingBadge] = "Segna lo slot",
                     [SettingTooltip] = "Aggiungi una riga al tooltip",
                 },
@@ -132,6 +150,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>ここでは発動しません</b>：この記憶は使用されることがありません。",
                     [NoCastOrDamage] = "<b>ここでは発動しません</b>：この記憶は使用されず、ダメージも与えません。",
                     [NoCastOrShield] = "<b>ここでは発動しません</b>：この記憶は使用されず、バリアも付与しません。",
+                    [NoCold] = "<b>ここでは発動しません</b>：この記憶は冷気ダメージを与えません。",
+                    [NoFire] = "<b>ここでは発動しません</b>：この記憶は火炎ダメージを与えません。",
                     [SettingBadge] = "スロットに印を付ける",
                     [SettingTooltip] = "ツールチップに一行追加",
                 },
@@ -146,6 +166,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 사용되지 않습니다.",
                     [NoCastOrDamage] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 사용되지 않으며 피해도 주지 않습니다.",
                     [NoCastOrShield] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 사용되지 않으며 보호막도 주지 않습니다.",
+                    [NoCold] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 냉기 피해를 주지 않습니다.",
+                    [NoFire] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 화염 피해를 주지 않습니다.",
                     [SettingBadge] = "슬롯에 표시",
                     [SettingTooltip] = "툴팁에 한 줄 추가",
                 },
@@ -160,6 +182,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie nigdy nie jest używane.",
                     [NoCastOrDamage] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie nigdy nie jest używane ani nie zadaje obrażeń.",
                     [NoCastOrShield] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie nigdy nie jest używane ani nie daje bariery.",
+                    [NoCold] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie nie zadaje Obrażeń od Zimna.",
+                    [NoFire] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie nie zadaje Obrażeń od Ognia.",
                     [SettingBadge] = "Oznacz slot",
                     [SettingTooltip] = "Dodaj wiersz do podpowiedzi",
                 },
@@ -174,6 +198,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>Nunca ativa aqui</b>: esta memória nunca é usada.",
                     [NoCastOrDamage] = "<b>Nunca ativa aqui</b>: esta memória nunca é usada nem causa dano.",
                     [NoCastOrShield] = "<b>Nunca ativa aqui</b>: esta memória nunca é usada nem concede barreira.",
+                    [NoCold] = "<b>Nunca ativa aqui</b>: esta memória não causa Dano de Glaciação.",
+                    [NoFire] = "<b>Nunca ativa aqui</b>: esta memória não causa Dano de Fogo.",
                     [SettingBadge] = "Marcar o encaixe",
                     [SettingTooltip] = "Acrescentar uma linha à dica",
                 },
@@ -188,6 +214,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>Burada hiç tetiklenmez</b>: bu anı hiç kullanılmaz.",
                     [NoCastOrDamage] = "<b>Burada hiç tetiklenmez</b>: bu anı hiç kullanılmaz ve hasar vermez.",
                     [NoCastOrShield] = "<b>Burada hiç tetiklenmez</b>: bu anı hiç kullanılmaz ve bariyer vermez.",
+                    [NoCold] = "<b>Burada hiç tetiklenmez</b>: bu anı Buz Hasarı vermez.",
+                    [NoFire] = "<b>Burada hiç tetiklenmez</b>: bu anı ateş hasarı vermez.",
                     [SettingBadge] = "Yuvayı işaretle",
                     [SettingTooltip] = "İpucuna bir satır ekle",
                 },
@@ -202,6 +230,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>在此永不触发</b>：该记忆从不施放。",
                     [NoCastOrDamage] = "<b>在此永不触发</b>：该记忆从不施放，也不造成伤害。",
                     [NoCastOrShield] = "<b>在此永不触发</b>：该记忆从不施放，也不提供护盾。",
+                    [NoCold] = "<b>在此永不触发</b>：该记忆不造成寒气伤害。",
+                    [NoFire] = "<b>在此永不触发</b>：该记忆不造成火焰伤害。",
                     [SettingBadge] = "标记槽位",
                     [SettingTooltip] = "在提示中添加一行",
                 },
@@ -216,6 +246,8 @@ namespace AreMyGemsCompatible
                     [NoCast] = "<b>在此永不觸發</b>：該記憶從不施放。",
                     [NoCastOrDamage] = "<b>在此永不觸發</b>：該記憶從不施放，也不造成傷害。",
                     [NoCastOrShield] = "<b>在此永不觸發</b>：該記憶從不施放，也不提供護盾。",
+                    [NoCold] = "<b>在此永不觸發</b>：該記憶不造成冰寒傷害。",
+                    [NoFire] = "<b>在此永不觸發</b>：該記憶不造成火焰傷害。",
                     [SettingBadge] = "標記槽位",
                     [SettingTooltip] = "在提示中加入一行",
                 },
@@ -243,6 +275,18 @@ namespace AreMyGemsCompatible
                 case SlotNeed.Cast: return Get(NoCast);
                 case SlotNeed.Cast | SlotNeed.Damage: return Get(NoCastOrDamage);
                 case SlotNeed.Cast | SlotNeed.Shield: return Get(NoCastOrShield);
+                default: return Get(Never);
+            }
+        }
+
+        // Only the elements an essence in ElementGates waits for have a sentence. Anything else
+        // falls to the generic line, as an unforeseen combination of needs does.
+        public static string ForElement(ElementSet element)
+        {
+            switch (element)
+            {
+                case ElementSet.Cold: return Get(NoCold);
+                case ElementSet.Fire: return Get(NoFire);
                 default: return Get(Never);
             }
         }

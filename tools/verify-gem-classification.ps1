@@ -17,6 +17,13 @@
 # Gem_E_Apathy appear warnable here and are silenced in game. TriggerConfig: which memories are
 # passive, and which status effect a passive applies, are guessed here from the Identity location
 # and the Se_D_/St_D_ naming. Both gaps are expected.
+#
+# A third, for the element rule: a memory's elements come from its description and tags alone
+# here. The game adds the constants in its code and the elements authored into its DamageInstance
+# prefabs; the in-game audit found those add nothing the dump lacks except St_C_Sneeze's rare
+# Light beam, so Sneeze is the one memory where this and the game can disagree. Siblings, statuses
+# and the room, which can change an element, are not modelled here either - a pairing is judged on
+# its own, as the in-game pair count does.
 param(
     [string]$GameDir = "C:\Program Files (x86)\Steam\steamapps\common\Shape of Dreams",
 
@@ -197,6 +204,14 @@ function Get-MemberNames($method, $follow) {
     return $names
 }
 
+# ElementGates, restated: the essences whose whole effect in the slot waits for one element.
+$elementGates = @{
+    'Gem_R_Frost'  = 'Cold'
+    'Gem_E_Apathy' = 'Cold'
+    'Gem_E_Fever'  = 'Fire'
+    'Gem_R_Lava'   = 'Fire'
+}
+
 $essences = foreach ($gem in ($types | Where-Object { $_ -ne $gemBase -and $gemBase.IsAssignableFrom($_) } | Sort-Object FullName)) {
     $needs = New-Object System.Collections.Generic.HashSet[string]
     $alwaysLive = $false
@@ -253,11 +268,17 @@ $essences = foreach ($gem in ($types | Where-Object { $_ -ne $gemBase -and $gemB
     }
     $supplies = if ($touchesCast -and $created.Count -gt 0) { ((Get-Capabilities $created) | Sort-Object) -join '|' } else { '' }
 
+    # ElementGates: everything these do in the slot sits behind one element, so nothing read above
+    # makes them live anywhere else - Gem_R_Frost's empty stat holder on the hero included.
+    $gate = $elementGates[$gem.Name]
+    if ($gate) { $alwaysLive = $false }
+
     [pscustomobject]@{
         Gem = $gem.FullName
         Needs = (($needs | Sort-Object) -join '|')
         AlwaysLive = $alwaysLive
         Supplies = $supplies
+        Gate = $gate
     }
 }
 
@@ -269,6 +290,8 @@ $healProse   = '(?i)\bheal(s|ed|ing)?\b|lifesteal|life steal|omnivamp|regenerat|
 $healVar     = '(?i)heal(?!th)'
 $shieldProse = '(?i)\bbarrier\b|\bshield(s|ed|ing)?\b'
 $shieldVar   = '(?i)shield|barrier'
+$elementProse = '(?i)\b(Fire|Cold|Light|Dark)\s+damage\b'
+$elementNames = @('Fire', 'Cold', 'Light', 'Dark')
 
 $dump = Join-Path $GameDir "RawData\en-US\memories.json"
 if (-not (Test-Path $dump)) { throw "no memory dump at $dump" }
@@ -311,7 +334,20 @@ foreach ($p in @($memories.PSObject.Properties)) {
     $proseShield = ($prose -match $shieldProse) -or ($vars -match $shieldVar)
 
     $code = if ($passive) { Get-CodeFacts $p.Name } else { $null }
+
+    # The elements the dump names, in prose before the word damage or among the tags. A passive
+    # memory passes on the hero's own damage, so its element is unknown ($null).
+    $elements = $null
+    if (-not $passive) {
+        $elements = New-Object System.Collections.Generic.HashSet[string]
+        foreach ($m in [regex]::Matches($prose, $elementProse)) {
+            [void]$elements.Add((Get-Culture).TextInfo.ToTitleCase($m.Groups[1].Value.ToLower()))
+        }
+        foreach ($tag in @($p.Value.tags)) { if ($elementNames -contains $tag) { [void]$elements.Add($tag) } }
+    }
+
     $facts[$p.Name] = [pscustomobject]@{
+        Elements    = $elements
         Location    = $location
         Cast        = -not $passive
         Damage      = if ($passive) { $null -ne $code -and $code.Contains('Damage') } else { $proseDamage }
@@ -362,6 +398,7 @@ Write-Host ""
 if ($Pairs) { $suppliers | ForEach-Object { "  supplies {0,-14} {1}" -f $_.Supplies, $_.Gem }; Write-Host "" }
 
 $total = 0
+$byElement = 0
 foreach ($e in ($warnable | Sort-Object Gem)) {
     $needs = $e.Needs -split '\|'
     $dead = foreach ($name in $slottable) {
@@ -371,19 +408,27 @@ foreach ($e in ($warnable | Sort-Object Gem)) {
             if (($n -eq 'Damage' -and $f.Damage) -or ($n -eq 'Heal' -and $f.Heal) -or
                 ($n -eq 'Shield' -and $f.Shield) -or ($n -eq 'Cast' -and $f.Cast)) { $alive = $true }
         }
+
+        # The element rule, on top: a memory that does the thing but never with that element.
+        if ($alive -and $e.Gate -and $null -ne $f.Elements -and -not $f.Elements.Contains($e.Gate)) {
+            $alive = $false
+            $script:byElement++
+        }
+
         if (-not $alive) { $name }
     }
     $dead = @($dead)
     $total += $dead.Count
     $where = @($dead | Group-Object { $facts[$_].Location } | Sort-Object Name |
         ForEach-Object { "$($_.Count) $($_.Name)" }) -join ', '
-    "{0,-24} {1,-17} dead in {2,3} of {3}   {4}" -f $e.Gem, $e.Needs, $dead.Count, $slottable.Count, $where
+    $label = if ($e.Gate) { "$($e.Needs) ($($e.Gate))" } else { $e.Needs }
+    "{0,-24} {1,-17} dead in {2,3} of {3}   {4}" -f $e.Gem, $label, $dead.Count, $slottable.Count, $where
     if ($Pairs) { $dead | ForEach-Object { "                             $_" } }
 }
 
 Write-Host ""
 $possible = $warnable.Count * $slottable.Count
-Write-Host ("$total warned pairs of $possible ({0:P0})" -f ($total / [double]$possible)) -ForegroundColor Green
+Write-Host ("$total warned pairs of $possible ({0:P0}), $byElement of them by element" -f ($total / [double]$possible)) -ForegroundColor Green
 
 # The loaded assemblies stay for the life of the session either way, but the handler should not.
 [System.AppDomain]::CurrentDomain.remove_AssemblyResolve($onResolve)

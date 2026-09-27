@@ -82,6 +82,14 @@ namespace AreMyGemsCompatible
             harmony.PatchAll();
             Widgets.Install();
             Debug.Log("[AreMyGemsCompatible] loaded: " + mod.metadata.id);
+
+#if DEBUG
+            try { MemoryElements.Audit(); }
+            catch (System.Exception e) { Debug.LogWarning("[AreMyGemsCompatible] element audit failed: " + e); }
+
+            try { Debug.Log("[AreMyGemsCompatible] pairs: " + Verdict.CountPairs()); }
+            catch (System.Exception e) { Debug.LogWarning("[AreMyGemsCompatible] pair count failed: " + e); }
+#endif
         }
 
         private void OnDestroy()

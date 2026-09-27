@@ -38,9 +38,12 @@ namespace AreMyGemsCompatible
             var skill = TargetMemory(__instance, gem);
             if (skill == null) return;
 
-            if (Verdict.For(gem, skill) != Compatibility.Dead) return;
+            ElementSet missing;
+            if (Verdict.For(gem, skill, out missing) != Compatibility.Dead) return;
 
-            var needs = GemTriggers.Of(gem).Needs;
+            string reason = missing != ElementSet.None
+                ? Localization.ForElement(missing)
+                : Localization.ForNeeds(GemTriggers.Of(gem).Needs);
 
             // The mark, if it can be drawn here at all. TooltipSprite says so rather than being
             // asked to guess: a <sprite> tag whose name resolves to nothing draws a blank box,
@@ -52,7 +55,7 @@ namespace AreMyGemsCompatible
             // rather than wrapped around part of it here: which clause carries the emphasis, and
             // where it ends, is a question about the sentence and so belongs to whoever wrote it.
             text.text = text.text + "\n\n" + mark +
-                        "<color=#ff6b6b>" + Localization.ForNeeds(needs) + "</color>";
+                        "<color=#ff6b6b>" + reason + "</color>";
         }
 
         private static SkillTrigger TargetMemory(UI_Tooltip_GemDescription instance, Gem gem)

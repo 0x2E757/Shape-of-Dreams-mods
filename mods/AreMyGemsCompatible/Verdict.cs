@@ -16,6 +16,131 @@ namespace AreMyGemsCompatible
         // The memory an essence is socketed into, or null while it is still on the ground.
         public static Compatibility For(Gem gem, SkillTrigger skill)
         {
+            ElementSet missing;
+            return For(gem, skill, out missing);
+        }
+
+        // missing is the element a Dead verdict is about, or None when the verdict is about what
+        // the memory does at all - which decides the sentence the tooltip shows.
+        public static Compatibility For(Gem gem, SkillTrigger skill, out ElementSet missing)
+        {
+            missing = ElementSet.None;
+            var verdict = ForNeeds(gem, skill);
+            if (verdict != Compatibility.Fine || gem == null || skill == null) return verdict;
+
+            var profile = GemTriggers.Of(gem);
+            if (profile.Gate == ElementSet.None || profile.AlwaysLive) return Compatibility.Fine;
+
+            // The memory does the thing the essence waits for. For an essence in the element
+            // table that is not enough: Essence of Frost wants Cold damage, and a memory that
+            // deals only Fire damage leaves it as dead as one that deals none.
+            var elements = MemoryElements.For(skill, MemoryData.Get(skill));
+            if (!elements.HasValue || (elements.Value & profile.Gate) != ElementSet.None) return Compatibility.Fine;
+
+            // What else could give the memory's damage an element - an essence beside it, a
+            // status on the hero, the room - and whether any of that is the one wanted. Frost
+            // beside Inversion is fine, Frost beside Sulfur is not. See ElementChangers.
+            var added = ElementChangers.AddedFor(gem, skill);
+            if (!added.HasValue || (added.Value & profile.Gate) != ElementSet.None) return Compatibility.Fine;
+
+            missing = profile.Gate;
+            return Compatibility.Dead;
+        }
+
+        // The verdict in words, with what went into it, for DevTools' command server - which
+        // calls this by reflection, so that neither mod has to reference the other. The sentence
+        // is the tooltip's own, in the game's language, without its markup.
+        public static string Describe(Gem gem, SkillTrigger skill)
+        {
+            if (gem == null || skill == null) return "no essence or no memory";
+
+            ElementSet missing;
+            var verdict = For(gem, skill, out missing);
+            var profile = GemTriggers.Of(gem);
+            var facts = MemoryData.Get(skill);
+            var elements = MemoryElements.For(skill, facts);
+            var added = profile.Gate != ElementSet.None ? ElementChangers.AddedFor(gem, skill) : ElementSet.None;
+
+            string detail = "needs=" + profile.Needs + (profile.AlwaysLive ? " alwaysLive" : "") +
+                            " gate=" + profile.Gate +
+                            " memory=" + (facts.IsKnown ? (elements.HasValue ? elements.Value.ToString() : "unknown") : "not in dump") +
+                            " added=" + (added.HasValue ? added.Value.ToString() : "unknown");
+
+            if (verdict != Compatibility.Dead) return "fine | " + detail;
+
+            string reason = missing != ElementSet.None
+                ? Localization.ForElement(missing)
+                : Localization.ForNeeds(profile.Needs);
+            return "DEAD: " + System.Text.RegularExpressions.Regex.Replace(reason, "<[^>]+>", "") + " | " + detail;
+        }
+
+#if DEBUG
+        // Debug builds only: every essence against every memory the dump knows, as prefabs, with
+        // nothing beside it - the figures the description and the notes quote. Siblings, statuses
+        // and the room are left out, since a pairing is judged here on its own.
+        public static string CountPairs()
+        {
+            var database = DewResources.database;
+            if (database == null || database.typeNameToType == null) return "no resource database";
+
+            var gems = new System.Collections.Generic.List<Gem>();
+            var memories = new System.Collections.Generic.List<SkillTrigger>();
+            foreach (var pair in database.typeNameToType)
+            {
+                var type = pair.Value;
+                if (type == null || type.IsAbstract || !database.typeToGuid.ContainsKey(type)) continue;
+
+                if (typeof(Gem).IsAssignableFrom(type))
+                {
+                    var gem = DewResources.GetByType(type) as Gem;
+                    if (gem != null) gems.Add(gem);
+                }
+                else if (typeof(SkillTrigger).IsAssignableFrom(type) && MemoryData.Get(pair.Key).IsKnown)
+                {
+                    var memory = DewResources.GetByType(type) as SkillTrigger;
+                    if (memory != null) memories.Add(memory);
+                }
+            }
+
+            int total = 0, dead = 0, byElement = 0, castTotal = 0, castDead = 0;
+            foreach (var memory in memories)
+            {
+                var facts = MemoryData.Get(memory);
+                foreach (var gem in gems)
+                {
+                    total++;
+                    if (facts.IsCast) castTotal++;
+
+                    var profile = GemTriggers.Of(gem);
+                    bool isDead = false;
+                    if (profile.Needs != SlotNeed.None && !profile.AlwaysLive && facts.IsKnown)
+                    {
+                        if ((profile.Needs & Supplied(facts)) == SlotNeed.None) isDead = true;
+                        else if (profile.Gate != ElementSet.None)
+                        {
+                            var elements = MemoryElements.For(memory, facts);
+                            if (elements.HasValue && (elements.Value & profile.Gate) == ElementSet.None)
+                            {
+                                isDead = true;
+                                byElement++;
+                            }
+                        }
+                    }
+
+                    if (!isDead) continue;
+                    dead++;
+                    if (facts.IsCast) castDead++;
+                }
+            }
+
+            return gems.Count + " essences x " + memories.Count + " memories: " + dead + " of " + total +
+                   " pairs dead (" + byElement + " of them by element); memories that are cast: " +
+                   castDead + " of " + castTotal;
+        }
+#endif
+
+        private static Compatibility ForNeeds(Gem gem, SkillTrigger skill)
+        {
             if (gem == null || skill == null) return Compatibility.Fine;
 
             var profile = GemTriggers.Of(gem);

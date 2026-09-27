@@ -17,6 +17,11 @@ namespace AreMyGemsCompatible
         // False only for a passive memory - an identity - which PassiveMemory describes.
         public bool IsCast;
 
+        // The elements the dump says this memory deals: "Fire damage" in the description, or the
+        // element among its tags. Only part of the answer - see MemoryElements, which adds what
+        // the memory's code and prefabs say.
+        public ElementSet Elements;
+
         // A memory the dump does not mention at all - one a later patch adds, or one another mod
         // brings - is not "does nothing", it is "not known", and nothing is said about it.
         public bool IsKnown;
@@ -78,6 +83,11 @@ namespace AreMyGemsCompatible
         private static readonly Regex ShieldProse = new Regex(@"\bbarrier\b|\bshield(s|ed|ing)?\b", RegexOptions.IgnoreCase);
         private static readonly Regex ShieldVar = new Regex(@"shield|barrier", RegexOptions.IgnoreCase);
 
+        // An element is named in prose right before the word damage - "deal an additional {2} Fire
+        // damage" - and among the tags by the same four words the enum uses. Both are read, and
+        // either is enough: tags say what a memory is, which for an element is also what it deals.
+        private static readonly Regex ElementProse = new Regex(@"\b(Fire|Cold|Light|Dark)\s+damage\b", RegexOptions.IgnoreCase);
+
         // Rich text is stripped before matching. The rendered numbers carry <sprite=1>, <gradient>
         // and <color> markup, and a tag name is not something to match words inside.
         private static readonly Regex RichText = new Regex("<[^>]+>");
@@ -95,7 +105,7 @@ namespace AreMyGemsCompatible
             return PassiveMemory.IsPassive(skill) ? PassiveMemory.Read(skill) : described;
         }
 
-        private static MemoryFacts Get(string typeName)
+        public static MemoryFacts Get(string typeName)
         {
             Load();
             MemoryFacts facts;
@@ -108,6 +118,8 @@ namespace AreMyGemsCompatible
             _loaded = false;
             _memories = null;
             PassiveMemory.Reset();
+            MemoryElements.Reset();
+            ElementChangers.Reset();
         }
 
         private static void Load()
@@ -153,6 +165,7 @@ namespace AreMyGemsCompatible
                     DealsDamage = DamageProse.IsMatch(prose) || DamageVar.IsMatch(vars),
                     Heals = HealProse.IsMatch(prose) || HealVar.IsMatch(vars),
                     Shields = ShieldProse.IsMatch(prose) || ShieldVar.IsMatch(vars),
+                    Elements = ElementsOf(prose, value),
                 };
             }
 
@@ -190,6 +203,28 @@ namespace AreMyGemsCompatible
                 text = described != null ? (string)described : null;
             }
             return string.IsNullOrEmpty(text) ? string.Empty : RichText.Replace(text, " ");
+        }
+
+        private static ElementSet ElementsOf(string prose, JObject entry)
+        {
+            var found = ElementSet.None;
+            foreach (Match match in ElementProse.Matches(prose)) found |= Element(match.Groups[1].Value);
+
+            var tags = entry["tags"] as JArray;
+            if (tags != null)
+                foreach (var tag in tags)
+                    found |= Element((string)tag);
+
+            return found;
+        }
+
+        private static ElementSet Element(string word)
+        {
+            if (string.IsNullOrEmpty(word)) return ElementSet.None;
+            ElementalType type;
+            return Enum.TryParse(word, true, out type) && Enum.IsDefined(typeof(ElementalType), type)
+                ? ElementGates.From(type)
+                : ElementSet.None;
         }
 
         // The authored field names behind each number, which say what the number is for in a

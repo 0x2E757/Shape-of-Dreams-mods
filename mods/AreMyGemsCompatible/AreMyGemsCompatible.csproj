@@ -86,6 +86,12 @@
       <HintPath>$(GameManagedDir)\Dew.External.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <!-- DewResources.database is a SerializedScriptableObject, so reading typeToGuid off it
+         needs Odin's serialization assembly in scope - the game's own copy, not a package. -->
+    <Reference Include="Sirenix.Serialization">
+      <HintPath>$(GameManagedDir)\Sirenix.Serialization.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Dew.UI">
       <HintPath>$(GameManagedDir)\Dew.UI.dll</HintPath>
       <Private>False</Private>

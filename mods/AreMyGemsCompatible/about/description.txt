@@ -1,4 +1,4 @@
-Warns about an essence that can never fire in the memory it is socketed into - one waiting for damage in a memory that deals none, for healing in a memory that never heals, or for the memory to be cast in an identity memory, which never is.
+Warns about an essence that can never fire in the memory it is socketed into - one waiting for damage in a memory that deals none, for healing in a memory that never heals, for Cold damage in a memory that only ever deals Fire, or for the memory to be cast in an identity memory, which never is.
 
 [h2]What it marks[/h2]
 [list]

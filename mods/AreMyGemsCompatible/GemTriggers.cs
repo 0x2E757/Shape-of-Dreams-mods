@@ -39,6 +39,10 @@ namespace AreMyGemsCompatible
         // something does, so a memory whose description promises nothing can still deal damage,
         // heal or shield because of an essence beside it. See Verdict.
         public SlotNeed Supplies;
+
+        // The one element this essence's damage trigger answers to, or None for any damage at
+        // all. See ElementGates.
+        public ElementSet Gate;
     }
 
     // An essence reaches the memory it is socketed into through Gem.OnEquipSkill, and what it
@@ -228,6 +232,17 @@ namespace AreMyGemsCompatible
             }
 
             profile.Supplies = ReadSupplies(gemType);
+
+            // An essence in the element table is there because everything it does in the slot
+            // sits behind that element, so nothing read out of its code makes it live anywhere
+            // else. That matters for one of them: Gem_R_Frost's OnEquipGem creates
+            // Se_Gem_R_Frost_Stat on the hero, which read as a hook on the hero and silenced the
+            // essence in every memory. It is a PersistentStatBonusEffect created empty - the
+            // Maximum Health it holds is added only when the essence fires. enableStatBonus,
+            // which is prefab data, is still honoured in Of(Gem).
+            profile.Gate = ElementGates.Of(gemType);
+            if (profile.Gate != ElementSet.None) profile.AlwaysLive = false;
+
             return profile;
         }
 
