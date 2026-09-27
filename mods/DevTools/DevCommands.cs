@@ -28,7 +28,7 @@ namespace DevTools
             "tooltip <slot> <index>             open that essence slot's tooltip, as hovering it does, and return its text\n" +
             "hide                               close the tooltip\n" +
             "screenshot [name]                  save a PNG of the screen at the end of this frame; returns its path\n" +
-            "down on|off                        knock the hero out and start spectating as co-op does, without a second player\n" +
+            "down on|spectate|off               a real knockout; then the spectate camera, as co-op starts it; then a revive\n" +
             "edit on|off                        open or close the edit-skill screen, as its key does\n" +
             "loadout                            what decides whether the edit-skill screen can be seen\n" +
             "slots are Q W E R Identity Movement";
@@ -255,20 +255,24 @@ namespace DevTools
             return path;
         }
 
-        // Co-op's knockout, as far as the interface can tell, in a game of one. The spectate camera
-        // starts only when another player is standing, so BuildWhileDown's fight with it could not
-        // be seen alone; this sets the two things the interface reads and fires the event it
-        // listens to.
+        // Co-op's knockout in a game of one, in the order co-op does it. The spectate camera starts
+        // only when another player is standing, so BuildWhileDown's fight with it could not be
+        // seen alone.
         //
-        // Only the SyncVar is set, not Se_HeroKnockedOut: no stun, no soul, no shrine. Game over
-        // is switched off while it lasts, since a party of one with nobody standing is otherwise
-        // over in four seconds. 'down off' stands the hero back up, and CameraManager ends the
-        // spectating on its own when it sees that.
+        //   down on        a real knockout: Kill, which the death interrupt turns into
+        //                  Se_HeroKnockedOut (or a bleed-out first, on difficulties that have one)
+        //                  - stun, invisibility, soul and all. Game over is switched off, since a
+        //                  party of one with nobody standing is otherwise over in four seconds.
+        //   down spectate  what CameraManager.LogicUpdateSpectation does three seconds later when
+        //                  a teammate is standing: isSpectating, then the event. The one part that
+        //                  cannot be real is the teammate - the camera stays on this hero.
+        //   down off       Se_HeroKnockedOut.Revive, as a teammate reaching the soul does; the
+        //                  camera ends the spectating on its next logic update.
         private static bool _gameOverWas = true;
 
         private static string Down(string[] words)
         {
-            if (words.Length < 2) return "down on|off";
+            if (words.Length < 2) return "down on|spectate|off";
             if (!NetworkServer.active) return "not the server";
 
             var hero = DevActions.LocalHero;
@@ -276,26 +280,48 @@ namespace DevTools
             var camera = ManagerBase<CameraManager>.instance;
             if (hero == null || game == null || camera == null) return "not in a run";
 
-            bool on = words[1].Equals("on", StringComparison.OrdinalIgnoreCase);
-            if (on)
+            switch (words[1].ToLowerInvariant())
             {
-                if (hero.isKnockedOut) return "already down";
-                _gameOverWas = game.isGameOverEnabled;
-                game.isGameOverEnabled = false;
-                hero.Network_isKnockedOut = true;
+                case "on":
+                    if (hero.isKnockedOut) return "already down";
+                    _gameOverWas = game.isGameOverEnabled;
+                    game.isGameOverEnabled = false;
+                    hero.Kill();
+                    return "killed; knocked out " + hero.isKnockedOut + " (a bleed-out, if any, comes first)";
 
-                // What CameraManager.LogicUpdateSpectation does when a teammate is standing.
-                AccessTools.PropertySetter(typeof(CameraManager), nameof(CameraManager.isSpectating))
-                    .Invoke(camera, new object[] { true });
-                camera.onIsSpectatingChanged?.Invoke(true);
+                case "spectate":
+                {
+                    if (!hero.isKnockedOut) return "not knocked out yet";
+
+                    // ChooseNextSpectationTarget moves the camera to a teammate first. With no
+                    // teammate, the nearest other living entity stands in for one, so that
+                    // whatever listens to the focus changing hears it too.
+                    Entity stand = null;
+                    float best = float.MaxValue;
+                    foreach (var other in UnityEngine.Object.FindObjectsByType<Entity>(FindObjectsSortMode.None))
+                    {
+                        if (other == null || other == hero || other.IsNullInactiveDeadOrKnockedOut()) continue;
+                        float distance = Vector3.Distance(other.position, hero.position);
+                        if (distance < best) { best = distance; stand = other; }
+                    }
+                    if (stand != null) camera.SetFocusedEntity(stand);
+
+                    AccessTools.PropertySetter(typeof(CameraManager), nameof(CameraManager.isSpectating))
+                        .Invoke(camera, new object[] { true });
+                    camera.onIsSpectatingChanged?.Invoke(true);
+                    return "spectating " + camera.isSpectating + ", camera on " +
+                           (camera.focusedEntity != null ? camera.focusedEntity.GetType().Name : "nothing");
+                }
+
+                case "off":
+                    if (hero.Status.TryGetStatusEffect<Se_HeroKnockedOut>(out var knockout)) knockout.Revive();
+                    else hero.Network_isKnockedOut = false;
+                    game.isGameOverEnabled = _gameOverWas;
+                    return "revived (the camera notices on its next logic update)";
+
+                default:
+                    return "down on|spectate|off";
             }
-            else
-            {
-                hero.Network_isKnockedOut = false;
-                game.isGameOverEnabled = _gameOverWas;
-            }
-            return "knocked out " + hero.isKnockedOut + ", spectating " + camera.isSpectating +
-                   (on ? "" : " (the camera notices on its next logic update)");
         }
 
         // The mode the key would set, without the key - so the gates in front of it are not what
@@ -340,6 +366,20 @@ namespace DevTools
                 if (line.Length > 0) text.Append('\n').Append(node.name).Append(':').Append(line);
             }
 
+            // And everything under them that can hide part of the panel: a canvas switched off, a
+            // group faded out. Not deactivated objects - over a thousand are, by design.
+            int hidden = 0;
+            foreach (var node in buttons.GetComponentsInChildren<Transform>(false))
+            {
+                if (node == buttons.transform) continue;
+                string why = null;
+                if (node.TryGetComponent<Canvas>(out var inner) && !inner.enabled) why = "canvas OFF";
+                else if (node.TryGetComponent<CanvasGroup>(out var innerGroup) && innerGroup.alpha < 0.05f) why = "alpha " + innerGroup.alpha.ToString("0.##");
+                if (why == null) continue;
+                if (++hidden <= 25) text.Append("\n  under: ").Append(PathFrom(buttons.transform, node)).Append(' ').Append(why);
+            }
+            if (hidden > 25) text.Append("\n  under: ... ").Append(hidden - 25).Append(" more");
+
             var bar = UnityEngine.Object.FindAnyObjectByType<UI_InGame_SkillButtonsBottomBar>(FindObjectsInactive.Include);
             if (bar != null && bar.TryGetComponent<CanvasGroup>(out var barGroup))
                 text.Append("\nbottom bar ").Append(bar.name).Append(" alpha ").Append(barGroup.alpha.ToString("0.##"));
@@ -349,6 +389,13 @@ namespace DevTools
                 if (vis.hideOnSpectate) text.Append("\nhidden on spectate: ").Append(vis.name);
 
             return text.ToString();
+        }
+
+        private static string PathFrom(Transform root, Transform node)
+        {
+            string path = node.name;
+            for (var up = node.parent; up != null && up != root; up = up.parent) path = up.name + "/" + path;
+            return path;
         }
 
         // Found at call time rather than cached: the other mod can be reloaded underneath this one.
