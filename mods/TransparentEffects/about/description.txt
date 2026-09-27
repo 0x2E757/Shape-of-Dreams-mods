@@ -10,6 +10,8 @@ Only how effects are drawn changes. Nothing moves, hits or lands differently, an
 
 The game's own "reduce other players' effects" setting is still there and still applies on top of the second row.
 
+Many of the game's effects are far from simple: one skill can be several layers on different shaders, with HDR glow and bloom on top, and each kind of layer responds to transparency a little differently. The mod evens them out as far as it can, but the same setting may not look exactly as faded on every skill.
+
 [h2]In co-op[/h2]
 Nobody else needs it and nobody else sees anything different - each client decides how to draw the effects on its own screen.
 

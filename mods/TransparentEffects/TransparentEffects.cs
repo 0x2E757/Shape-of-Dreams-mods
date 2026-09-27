@@ -78,6 +78,10 @@ namespace TransparentEffects
             // defaults and would go on being the defaults for the life of the mod.
             LoadConfigsToDisk();
             Live = config;
+#if DEBUG
+            Exponents.OverridePath = System.IO.Path.Combine(Application.persistentDataPath, "QuickSave", "Mods",
+                                                            mod.metadata.id, "exponents.txt");
+#endif
 
             // Before PatchAll, and that order is load-bearing: the patch hands out variant ids and
             // DewResources looks each one up in a dictionary when it builds the variant. An id
