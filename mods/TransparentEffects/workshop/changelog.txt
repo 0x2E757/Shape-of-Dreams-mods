@@ -1,14 +1,4 @@
 [h2]1.1[/h2]
 [list]
-[*]Effects fade more evenly from skill to skill: bright HDR glow now dims along with the rest, and solid particles no longer turn into dark squares behind the flash
-[*]Light that effects throw on the ground now dims with them
-[*]Solid objects some effects are made of, such as a sword, now become see-through instead of only darker
-[*]Particles that did not dim at all before now do
-[*]Changing the setting mid-run no longer leaves some effects at the old opacity
-[*]Settings sliders can now be dragged from either end — at 0 and 1 the handle used to ignore the mouse
-[/list]
-
-[h2]1.0[/h2]
-[list]
 [*]First release
 [/list]
