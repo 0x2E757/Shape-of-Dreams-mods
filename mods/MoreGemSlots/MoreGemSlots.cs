@@ -16,8 +16,8 @@ namespace MoreGemSlots
 
         // How far a memory has to be upgraded to gain a slot of its own, counted the way the game
         // shows it: the +5 on a memory, not its level, which is one higher.
-        [Range(1, 20)] public int memoryUpgradesForFirstSlot = 5;
-        [Range(1, 20)] public int memoryUpgradesForSecondSlot = 10;
+        [Range(1, 50)] public int memoryUpgradesForFirstSlot = 5;
+        [Range(1, 50)] public int memoryUpgradesForSecondSlot = 10;
 
         private const float LabelWidth = 260f;
         private const float InputWidth = 120f;

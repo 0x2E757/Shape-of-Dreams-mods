@@ -1,3 +1,8 @@
+[h2]1.2[/h2]
+[list]
+[*]The memory upgrade thresholds in the settings now go up to +50 instead of stopping at +20
+[/list]
+
 [h2]1.1[/h2]
 [list]
 [*]Essence slots are now drawn on the scoreboard opened with Tab, and on the result screen at the end of a run — both previously showed nothing at all once a memory had more than four
