@@ -199,6 +199,14 @@ namespace Shared
             // the handle draggable rather than the whole track clickable.
             foreach (var graphic in slider.GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = true;
 
+            // The prefab's root carries a DuloGames UIRectangularRaycastFilter, which accepts a
+            // press only inside the widget's rect shrunk by authored borders - borders sized for
+            // the stock insets. With the track widened below, both ends of it lie in that excluded
+            // margin, so at exactly 0 and 1 the handle sat where no press was accepted: it ignored
+            // the mouse and only a click further along the line moved it. Disabled, the filter
+            // passes everything, and the widget's own rect is the boundary.
+            if (slider.TryGetComponent<DuloGames.UI.UIRectangularRaycastFilter>(out var filter)) filter.enabled = false;
+
             if (slider.GetComponent<Graphic>() == null)
             {
                 var hitArea = slider.gameObject.AddComponent<Image>();

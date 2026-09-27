@@ -80,7 +80,7 @@ time rather than captured — the same shape the stock `GenericInputFieldBuilder
 
 ### Making an unused prefab work
 
-That prefab had never been through a layout, and four separate things had to be put right. Each
+That prefab had never been through a layout, and five separate things had to be put right. Each
 looked like the whole problem while it lasted:
 
 - **Range order.** It is a 0..1 slider, so assigning `minValue` above the current `maxValue`
@@ -95,6 +95,15 @@ looked like the whole problem while it lasted:
   the latter reserved for the prefab's own value text. Usable track is the width minus those, and
   the handle is 32 wide — so a 240-wide slider has 16 pixels of travel and is indistinguishable
   from a dead one. Narrowing the widget means narrowing the insets and the value text with it.
+- **The raycast filter.** Found later, as a fifth: the root carries a DuloGames
+  `UIRectangularRaycastFilter`, an `ICanvasRaycastFilter` that accepts a press only inside the
+  widget's rect shrunk by authored borders — borders that match the stock insets. Once the track is
+  widened, both of its ends lie in that excluded margin, so at exactly 0 and at 1 the handle ignored
+  the mouse and only a click further along the line moved it; everywhere in between it worked.
+  `BuildSlider` disables the filter, which then passes everything, and the widget's own rect is the
+  boundary. It was found by asking the `EventSystem` what was under the cursor and replaying
+  `GraphicRaycaster`'s checks per graphic — the slider's graphics were all there, enabled and drawn,
+  and every one of them was refused by the filter on the root.
 
 The lesson that actually shortened this: **measure the rendered rect, a frame after the layout has
 run.** Measuring immediately after building returns the preferred size, which is how a width can be
