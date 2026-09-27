@@ -1,4 +1,4 @@
-[h2]1.1[/h2]
+[h2]1.2[/h2]
 [list]
 [*]First release
 [/list]

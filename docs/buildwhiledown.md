@@ -95,23 +95,36 @@ flag, and is deliberately left alone — the existence of `UI_InGame_SkillButton
 whole job is the skill bar's visibility including the spectate case, is the evidence that the skill
 bar is not also under one.
 
-Unpatching takes the stand-ins away but not what they left on screen, so `OnDestroy` ends with
-`Repaint.AsTheGameWould`: the two handlers are called once more, now answered by the game alone.
+The bar and the canvas are repainted only by the spectate event, so the mod asks for a repaint
+itself at both ends — `Repaint.Loadout`, which calls the two handlers once more. In `OnDestroy`,
+after unpatching, the game alone answers and hides what it would have hidden. In `Awake`, after
+patching, the mod answers and brings back what it keeps visible.
 
 ## Testing it alone
 
 The spectate camera starts only when another player is standing, so none of this can be seen in a
-game of one. DevTools' command server (Debug builds) fakes the part the interface reads:
+game of one. DevTools' command server (Debug builds) stands in for the part that needs a teammate:
 
 ```
-devcmd down on     # hero.isKnockedOut, game over off, isSpectating + onIsSpectatingChanged(true)
-devcmd edit on     # StartRegularEdit, bypassing the key's gates - it tests what happens after
-devcmd loadout     # canvases, alphas and hideOnSpectate between the buttons and the screen
-devcmd down off    # stands the hero up; the camera ends spectating on its next logic update
+devcmd down on        # game over off, then a real Kill - Se_HeroKnockedOut, stun, soul and all
+devcmd edit on        # StartRegularEdit, bypassing the key's gates - it tests what happens after
+devcmd down spectate  # the camera to the nearest other entity, isSpectating, onIsSpectatingChanged
+devcmd loadout        # knockout, spectating, edit mode, input gates, hidden canvases and groups
+devcmd down off       # Se_HeroKnockedOut.Revive; the camera ends spectating on its next update
 ```
 
-Only the SyncVar is set, not `Se_HeroKnockedOut`, so there is no stun, soul or shrine — enough for
-the interface, not a substitute for a real co-op knockout.
+The one thing it cannot be is a teammate: the camera goes to a prop or a monster instead. It is
+close enough that the Release build passed it — and so did a real co-op run afterwards, recorded by
+polling `loadout` twice a second.
+
+**A mod reload while spectating emptied the bar.** Deleting a folder from the mod directory mid-run
+made the loader's file watcher reload every mod: the old copy unloaded, `Repaint` handed visibility
+back to the game, the game switched the canvas off, and the new copy loaded without repainting. The
+bar stayed empty until the camera next moved. The mod now repaints on load too. An earlier co-op
+test showed the same symptom, and a reload is the likely cause, though its log records none.
+
+If an empty bar comes back, the recording is the way to catch it — poll `loadout`, and take a
+`screenshot` when `spectating` flips.
 
 ## Transpilers, and why not a scoped gate
 

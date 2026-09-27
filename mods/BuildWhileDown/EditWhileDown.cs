@@ -163,12 +163,20 @@ namespace BuildWhileDown
         }
     }
 
-    // Unpatching takes the lies back but not their effects: a bar and a canvas left visible while
-    // the camera is on a teammate stay visible until the next event. Asking both to repaint once
-    // the patches are gone puts them where the game would have them.
+    // The bar and the canvas are repainted only by events, so a change in who answers - the mod
+    // arriving or leaving - shows nothing until the camera next moves. Both ends have to ask for
+    // a repaint themselves:
+    //
+    //   unloading   the patches are gone, so the game hides what it would have hidden;
+    //   loading     the patches are in, so what the mod keeps visible comes back.
+    //
+    // The second is not a nicety. A mod reload happens mid-run - from the mod manager, or on its
+    // own when the loader's file watcher sees a mod folder change - and one while the camera is on
+    // a teammate went: old copy unloads, the game switches the canvas off, new copy loads, nothing
+    // repaints. The loadout was an empty bar until the next knockout.
     internal static class Repaint
     {
-        public static void AsTheGameWould()
+        public static void Loadout()
         {
             var camera = CameraManager.softInstance;
             if (camera == null) return;

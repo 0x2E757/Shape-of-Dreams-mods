@@ -38,6 +38,10 @@ namespace BuildWhileDown
         {
             IsLive = true;
             harmony.PatchAll();
+
+            // A reload can land while the camera is already on a teammate, and the game hid the
+            // loadout when the previous copy left. Nothing else would bring it back.
+            Repaint.Loadout();
             Debug.Log("[BuildWhileDown] loaded: " + mod.metadata.id);
         }
 
@@ -54,7 +58,7 @@ namespace BuildWhileDown
             harmony.UnpatchAll(harmony.Id);
 
             // After, so that the repaint is answered by the game's own logic and not ours.
-            Repaint.AsTheGameWould();
+            Repaint.Loadout();
             Debug.Log("[BuildWhileDown] unloaded: " + mod.metadata.id);
         }
     }
