@@ -1,3 +1,10 @@
+[h2]1.2[/h2]
+[list]
+[*]Essences that answer to one element are now checked: Essence of Frost and Essence of Apathy wait for Cold damage, Essence of Fever and Essence of Lava for Fire damage, and each is marked in a memory that never deals it - Essence of Frost in Incendiary Rounds is the case that was reported
+[*]An essence beside it that changes the element of the memory's damage is taken into account: Essence of Inversion can turn Fire into Cold, so Essence of Frost beside it is not marked; Essence of Sulfur only ever makes Fire, so it still is
+[*]Essence of Frost used to go unmarked everywhere, even in a memory that deals no damage at all
+[/list]
+
 [h2]1.1[/h2]
 [list]
 [*]Essences in identity memories are now checked too, for when a shrine gives one an essence slot - an identity memory is never cast, so an essence that works off the cast is marked there
