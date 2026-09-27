@@ -586,7 +586,6 @@ namespace DevTools
             ("St_R_Cataclysm", "meteor flight + impact + burn"),
             ("St_E_DoomsdayMeteor", "control: vetoed by the game, never dimmed"),
             ("St_E_Blink", "five effects in one instance"),
-            ("St_L_SoulKiller", "main instance + souls"),
             ("St_L_Blizzard", "storm + damage instances"),
             ("St_R_PrecisionShot", "Lacerta's R: cast + projectile"),
         };

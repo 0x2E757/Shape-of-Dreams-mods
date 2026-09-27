@@ -72,6 +72,12 @@
       <HintPath>$(GameManagedDir)\Dew.External.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <!-- DewResources.database is a SerializedScriptableObject, so reading typeNameToType off it
+         needs Odin's serialization assembly in scope - the game's own copy, not a package. -->
+    <Reference Include="Sirenix.Serialization">
+      <HintPath>$(GameManagedDir)\Sirenix.Serialization.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Dew.UI">
       <HintPath>$(GameManagedDir)\Dew.UI.dll</HintPath>
       <Private>False</Private>
@@ -210,6 +216,10 @@
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath>$(GameManagedDir)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ScreenCaptureModule">
+      <HintPath>$(GameManagedDir)\UnityEngine.ScreenCaptureModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UIModule">

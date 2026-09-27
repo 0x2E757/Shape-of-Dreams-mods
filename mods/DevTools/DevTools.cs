@@ -92,6 +92,11 @@ namespace DevTools
             // the function that works out how much a run earned. See ScorelessRun.cs.
             harmony.PatchAll();
 
+#if DEBUG
+            // On the mod's own object, so it goes when the mod does.
+            gameObject.AddComponent<DevServer>();
+#endif
+
             Debug.Log($"[DevTools] loaded: {mod.metadata.id} - {config.hotkey} toggles the panel");
         }
 

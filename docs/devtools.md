@@ -44,6 +44,42 @@ way round precisely because they are published.
 | Forget that node's room | Clears one node's remembered room — see below |
 | Gem tuning | opens the section below |
 
+## The command server
+
+Debug builds only. A test that needs a particular memory with particular essences beside it —
+AreMyGemsCompatible's element rules are the case it was built for — is slow to set up by hand
+and impossible to set up from outside the game. So a Debug build of DevTools listens on
+`127.0.0.1:47653` and takes one command per connection: a line of text in, the answer back.
+`tools/devcmd.ps1` is the client.
+
+```
+.\tools\devcmd.ps1 memory Q St_Q_IncendiaryRounds
+.\tools\devcmd.ps1 gem Q 0 Gem_R_Frost
+.\tools\devcmd.ps1 verdict Q
+Q[0] Gem_R_Frost in St_Q_IncendiaryRounds: DEAD: ... | needs=Damage gate=Cold memory=Fire added=None
+```
+
+| Command | What it does |
+| --- | --- |
+| `state` | every memory and essence on the hero, with slot counts |
+| `memory <slot> <St_Type> [level]` | a new memory in the slot; the old one is destroyed and its essences move over. Another hero's own memory is allowed |
+| `gem <slot> <index> <Gem_Type> [quality]` | a new essence in the slot; whatever was there, and any essence of the same type elsewhere, is destroyed |
+| `cleargems [slot]` | destroys every essence, or those in one slot |
+| `slots <slot> <count>` | the essence slot count |
+| `verdict [slot]` | AreMyGemsCompatible's verdict for each essence, with the needs, element and memory elements behind it |
+
+Slots are `Q W E R Identity Movement`. The loadout commands are host only, like the panel's.
+
+**Loopback only, Debug only.** Nothing off this machine can reach the port. Anything on it can,
+and it changes the loadout, which is why it is not in a Release build and DevTools is never
+published. Commands are queued from the socket thread and run in `Update` on the main thread,
+since nothing the game owns may be touched from another thread; and because Unity stops calling
+`Update` when the window loses focus, which it always has when a command comes from a terminal,
+`Application.runInBackground` is on while the server is loaded and restored when it goes.
+
+`verdict` calls `AreMyGemsCompatible.Verdict.Describe` by reflection, so neither mod references the
+other and either can be reloaded on its own.
+
 ## Forgetting a node's room
 
 A repair tool rather than a testing one, and the only control here that writes to a live run's save
