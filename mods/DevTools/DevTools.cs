@@ -66,6 +66,9 @@ namespace DevTools
         // with it on - which is the right way round for something turned on to get through a map
         // quickly, and is visible on the panel either way.
         [HideInInspector] public bool godMode;
+
+        // Which of DevPanel.TestEssences the spawn button hands out.
+        [HideInInspector] public int testEssence;
     }
 
     // Named DevToolsMod rather than DevTools, unlike its two siblings, because a class with the

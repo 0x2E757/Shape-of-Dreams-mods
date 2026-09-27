@@ -138,6 +138,48 @@ namespace DevTools
             return Dew.GetGoodRewardPosition(LocalHero.agentPosition, SpawnSpread);
         }
 
+        // ----- essence slots on identity and movement ---------------------------------
+
+        // Four, because that is what the game draws on its own and where a Corrupted Chaos shrine
+        // stops adding slots. MoreGemSlots would draw more, but it is not needed to test anything
+        // here.
+        public const int MaxExtraSlots = 4;
+
+        public static int GemSlots(HeroSkillLocation where)
+        {
+            var hero = LocalHero;
+            return hero != null && hero.Skill != null ? hero.Skill.GetMaxGemCount(where) : 0;
+        }
+
+        // What a Corrupted Chaos shrine does for Identity, and what only another mod does for
+        // Movement, without finding a shrine or installing the mod: both are one syncvar, and
+        // HeroSkill.SetMaxGemCount writes it. Neither MoreGemSlots nor the game writes these two
+        // back on every frame, so the count stays - though a shrine's bonus updating later would
+        // set Identity to whatever the shrine thinks it gave.
+        //
+        // An essence in a slot that is going away is put on the ground first. SetMaxGemCount does
+        // nothing about it, and an essence left equipped past the count is one nobody can reach.
+        public static string SetGemSlots(HeroSkillLocation where, int count)
+        {
+            if (!CanAct(out string reason)) return reason;
+
+            var hero = LocalHero;
+            var skill = hero.Skill;
+            count = Mathf.Clamp(count, 0, MaxExtraSlots);
+
+            int live = skill.GetMaxGemCount(where);
+            if (live == count) return $"{where} slots already {count}";
+
+            for (int index = count; index < live; index++)
+            {
+                var location = new GemLocation(where, index);
+                if (skill.gems.ContainsKey(location)) skill.UnequipGem(location, hero.agentPosition);
+            }
+
+            skill.SetMaxGemCount(where, count);
+            return $"{where} essence slots -> {count}";
+        }
+
         // ----- a node's saved room -------------------------------------------------
 
         // Forget what a node's room looked like, so that walking back into it builds the room

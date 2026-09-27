@@ -50,6 +50,11 @@ namespace DevTools
         private TextMeshProUGUI _heroLevelText;
         private TextMeshProUGUI _itemLevelText;
         private TextMeshProUGUI _roomNodeText;
+        private TextMeshProUGUI _identitySlotsText;
+        private TextMeshProUGUI _movementSlotsText;
+        private TextMeshProUGUI _testEssenceText;
+        private Button _testEssenceButton;
+        private string _testEssenceLabel = "";
         private TextMeshProUGUI _statusText;
         private Button[] _actionButtons;
         private Button _godButton;
@@ -121,6 +126,11 @@ namespace DevTools
             _heroLevelText = NumberRow(_box, "Hero level", HeroLevelDelta);
             _itemLevelText = NumberRow(_box, "Item level", ItemLevelDelta);
             _roomNodeText = NumberRow(_box, "Room node", RoomNodeDelta);
+            _identitySlotsText = NumberRow(_box, "Identity slots",
+                                           d => SlotsDelta(HeroSkillLocation.Identity, d));
+            _movementSlotsText = NumberRow(_box, "Movement slots",
+                                           d => SlotsDelta(HeroSkillLocation.Movement, d));
+            _testEssenceText = NumberRow(_box, "Test essence", TestEssenceDelta);
 
             // Left interactable whatever the hero is doing, unlike the buttons below it: it is a
             // switch rather than an action, and setting it before a run starts so that the run
@@ -132,6 +142,8 @@ namespace DevTools
             {
                 ActionButton(_box, "Spawn random memory", () => DevActions.SpawnMemory(_config.itemLevel)),
                 ActionButton(_box, "Spawn random essence", () => DevActions.SpawnEssence(_config.itemLevel)),
+                _testEssenceButton = ActionButton(_box, "", () => DevActions.SpawnEssence(
+                                                      TestEssence.typeName, _config.itemLevel)),
                 ActionButton(_box, "Spawn Apple of Discord",
                              () => DevActions.SpawnEssence("Gem_L_ChaosApple", _config.itemLevel)),
                 ActionButton(_box, "Knock out hero", DevActions.KillHero),
@@ -501,6 +513,55 @@ namespace DevTools
                     : wanted + " " + NodeCaption(zone, wanted);
         }
 
+        // Steps by one for the same reason: a slot count is at most four, and five at a time would
+        // go from none to all in one click.
+        private void SlotsDelta(HeroSkillLocation where, int delta)
+        {
+            _status = DevActions.SetGemSlots(where, DevActions.GemSlots(where) + Math.Sign(delta));
+        }
+
+        // ----- essences for AreMyGemsCompatible --------------------------------------
+        //
+        // One of each thing that mod's verdict can turn on, so that every line of its tooltip and
+        // every way an essence is saved from one can be put in front of it on purpose. The note is
+        // what the essence waits for, in the mod's own terms, and what it hands its memory.
+        private static readonly (string typeName, string note)[] TestEssences =
+        {
+            ("Gem_C_Charcoal", "damage"),
+            ("Gem_C_Guidance", "healing"),
+            ("Gem_C_Love", "healing or barrier"),
+            ("Gem_R_Ricochet", "damage or healing"),
+            ("Gem_C_Sharp", "cast, supplies damage"),
+            ("Gem_C_Regeneration", "cast, supplies healing"),
+            ("Gem_C_Quicksilver", "cast or damage"),
+            ("Gem_L_SuppressedArcanum", "cast or barrier"),
+            ("Gem_E_Direness", "cast - a skill bonus only"),
+        };
+
+        private (string typeName, string note) TestEssence =>
+            TestEssences[Mathf.Clamp(_config.testEssence, 0, TestEssences.Length - 1)];
+
+        // Wraps round rather than stopping, since the list is short and walking back to the start
+        // is the common case.
+        private void TestEssenceDelta(int delta)
+        {
+            int count = TestEssences.Length;
+            _config.testEssence = ((_config.testEssence + Math.Sign(delta)) % count + count) % count;
+            _save?.Invoke();
+            _status = TestEssence.typeName + " - " + TestEssence.note;
+        }
+
+        private void LabelTestEssenceButton()
+        {
+            if (_testEssenceButton == null) return;
+
+            string label = "Spawn " + TestEssence.typeName.Replace("Gem_", "");
+            if (label == _testEssenceLabel) return;
+
+            _testEssenceLabel = label;
+            DewGUI.SetText(_testEssenceButton.gameObject, label);
+        }
+
         private static string NodeCaption(ZoneManager zone, int node)
         {
             string room = zone.nodes[node].room;
@@ -524,6 +585,11 @@ namespace DevTools
                                 : "-";
             _itemLevelText.text = _config.itemLevel.ToString();
             _roomNodeText.text = _config.roomNode.ToString();
+            _identitySlotsText.text = canAct ? DevActions.GemSlots(HeroSkillLocation.Identity).ToString() : "-";
+            _movementSlotsText.text = canAct ? DevActions.GemSlots(HeroSkillLocation.Movement).ToString() : "-";
+            _testEssenceText.text = (Mathf.Clamp(_config.testEssence, 0, TestEssences.Length - 1) + 1) +
+                                    "/" + TestEssences.Length;
+            LabelTestEssenceButton();
 
             // Every frame, because a room load replaces the hero and takes the granted bonus with
             // it. Asking for the state that is wanted rather than for a change is what makes that

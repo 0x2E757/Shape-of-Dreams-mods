@@ -38,6 +38,8 @@ way round precisely because they are published.
 | Spawn Apple of Discord | That one essence by name (`Gem_L_ChaosApple`), for checking AutoCast's in-place replacement rule |
 | Knock out hero | `Entity.Kill()`, and the run it ends awards 0 mastery points |
 | Room node | Which node the button below acts on; stepping it names the room under it |
+| Identity slots, Movement slots | `HeroSkill.SetMaxGemCount` for those two, 0 to 4 — what a Corrupted Chaos shrine gives Identity and only another mod gives Movement. An essence in a slot being taken away is dropped at the hero's feet first |
+| Test essence | Steps through one essence per case `AreMyGemsCompatible`'s verdict turns on — damage, healing, a barrier, the cast, and the two that supply their memory — and the button under it spawns the one picked, at the item level |
 | Forget that node's room | Clears one node's remembered room — see below |
 | Gem tuning | opens the section below |
 
