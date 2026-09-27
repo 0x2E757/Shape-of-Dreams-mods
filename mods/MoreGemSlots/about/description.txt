@@ -17,5 +17,8 @@ Slots can be lost as well as gained. Swap a levelled memory for a fresh one and 
 [h2]Where the slots are drawn[/h2]
 The game draws at most four essence slots per memory, and past that its own layouts switch off and the slots vanish from view while still working underneath. Three screens do this — the skill bar, the scoreboard on Tab, and the result screen at the end of a run — and all three are extended here. They also arrange the slots the same way as each other, so a memory with six of them looks the same wherever you see it.
 
+[h2]Movement memories[/h2]
+This mod gives Movement memories no slots, and neither does the game. If another mod adds some, they are drawn like any other slot, but not every essence works in them: some that by their own description should work there simply do nothing, because the game itself never applies them to a Movement memory. That is a limit of the game, not of this mod.
+
 [h2]Source code[/h2]
 [url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]
