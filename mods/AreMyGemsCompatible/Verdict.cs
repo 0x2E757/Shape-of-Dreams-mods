@@ -32,7 +32,8 @@ namespace AreMyGemsCompatible
             var supplied = Supplied(facts);
 
             // Needs is a union, not a checklist: Gem_R_Ricochet fires on damage *or* healing, and
-            // a memory doing either keeps it alive.
+            // a memory doing either keeps it alive. Gem_C_Quicksilver fires on the cast *or* on
+            // damage, which in an identity memory is a question about damage alone.
             if ((profile.Needs & supplied) != SlotNeed.None) return Compatibility.Fine;
 
             // The one way a memory does more than its own description says. An essence that fires
@@ -41,7 +42,7 @@ namespace AreMyGemsCompatible
             // memory, and Actor.InvokeOnDealDamage walks up parentActor from there. So the
             // *memory* registers as having dealt the damage. Put a damage-on-cast essence into a
             // memory that deals none, and the damage-triggered essence beside it works.
-            if ((profile.Needs & SuppliedBySiblings(gem, skill)) != SlotNeed.None) return Compatibility.Fine;
+            if ((profile.Needs & SuppliedBySiblings(gem, skill, facts)) != SlotNeed.None) return Compatibility.Fine;
 
             return Compatibility.Dead;
         }
@@ -52,14 +53,20 @@ namespace AreMyGemsCompatible
             if (facts.DealsDamage) supplied |= SlotNeed.Damage;
             if (facts.Heals) supplied |= SlotNeed.Heal;
             if (facts.Shields) supplied |= SlotNeed.Shield;
+            if (facts.IsCast) supplied |= SlotNeed.Cast;
             return supplied;
         }
 
         // Read off the memory's owner rather than the essence's, so that the answer is the same
         // whether the essence is already socketed or is being dragged over the slot - in which
         // case it has no owner at all yet.
-        private static SlotNeed SuppliedBySiblings(Gem gem, SkillTrigger skill)
+        private static SlotNeed SuppliedBySiblings(Gem gem, SkillTrigger skill, MemoryFacts facts)
         {
+            // Everything a sibling supplies is created through EventInfoCast.instance, and a
+            // memory that is never cast never hands out an EventInfoCast. Gem_C_Sharp beside a
+            // damage-triggered essence in an identity memory that deals none leaves both dead.
+            if (!facts.IsCast) return SlotNeed.None;
+
             var owner = skill.owner;
             if (owner == null || owner.Skill == null) return SlotNeed.None;
 
@@ -75,9 +82,10 @@ namespace AreMyGemsCompatible
 
                 var sibling = GemTriggers.Of(other);
 
-                // It has to fire whatever the memory does: an essence itself waiting on the
-                // memory cannot lift anything out of a memory that never starts it.
-                if (!sibling.AlwaysLive) continue;
+                // It has to fire on the cast, or be something this mod cannot rule out: an essence
+                // itself waiting on damage cannot lift anything out of a memory that never starts
+                // it. The memory is cast - that was settled above - so the cast is enough.
+                if (!sibling.AlwaysLive && (sibling.Needs & SlotNeed.Cast) == SlotNeed.None) continue;
 
                 // Supplies is read out of what the sibling creates and what those things then do,
                 // never out of what it says about itself. Essence descriptions cannot answer this

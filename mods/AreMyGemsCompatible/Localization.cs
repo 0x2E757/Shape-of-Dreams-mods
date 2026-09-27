@@ -11,8 +11,8 @@ namespace AreMyGemsCompatible
     // unrecognised, including a language added by a later patch, falls back to English.
     //
     // **This is the only place in the mod a language other than English appears.** What is decided
-    // - whether a memory ever deals damage, heals or grants a barrier - is read out of
-    // RawData\en-US and nowhere else, because the answer comes from prose and prose is exactly
+    // - whether a memory is ever cast, deals damage, heals or grants a barrier - is read out of
+    // RawData\en-US or out of code and nowhere else, because the answer comes from prose and prose is exactly
     // what a translation changes. These strings are the sentence shown afterwards, and translating
     // a sentence cannot change a verdict.
     //
@@ -26,6 +26,9 @@ namespace AreMyGemsCompatible
         public const string NoShield = "warn.shield";
         public const string NoHealOrShield = "warn.heal.shield";
         public const string NoDamageOrHeal = "warn.damage.heal";
+        public const string NoCast = "warn.cast";
+        public const string NoCastOrDamage = "warn.cast.damage";
+        public const string NoCastOrShield = "warn.cast.shield";
         public const string Never = "warn.generic";
 
         public const string SettingBadge = "settings.badge";
@@ -42,6 +45,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>Never triggers here</b>: this memory neither heals nor grants a barrier.",
                     [NoDamageOrHeal] = "<b>Never triggers here</b>: this memory neither deals damage nor heals.",
                     [Never] = "<b>Never triggers here</b>: this memory never does what it waits for.",
+                    [NoCast] = "<b>Never triggers here</b>: this memory is never cast.",
+                    [NoCastOrDamage] = "<b>Never triggers here</b>: this memory is never cast and deals no damage.",
+                    [NoCastOrShield] = "<b>Never triggers here</b>: this memory is never cast and grants no barrier.",
                     [SettingBadge] = "Mark the slot",
                     [SettingTooltip] = "Add a line to the tooltip",
                 },
@@ -53,6 +59,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>Здесь не сработает</b>: эта память не лечит и не даёт барьера.",
                     [NoDamageOrHeal] = "<b>Здесь не сработает</b>: эта память не наносит урона и не лечит.",
                     [Never] = "<b>Здесь не сработает</b>: эта память никогда не делает того, чего эссенция ждёт.",
+                    [NoCast] = "<b>Здесь не сработает</b>: эта память никогда не применяется.",
+                    [NoCastOrDamage] = "<b>Здесь не сработает</b>: эта память никогда не применяется и не наносит урона.",
+                    [NoCastOrShield] = "<b>Здесь не сработает</b>: эта память никогда не применяется и не даёт барьера.",
                     [SettingBadge] = "Отмечать слот",
                     [SettingTooltip] = "Добавлять строку в подсказку",
                 },
@@ -64,6 +73,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>Löst hier nie aus</b>: Diese Erinnerung heilt nicht und gewährt keine Barriere.",
                     [NoDamageOrHeal] = "<b>Löst hier nie aus</b>: Diese Erinnerung verursacht keinen Schaden und heilt nicht.",
                     [Never] = "<b>Löst hier nie aus</b>: Diese Erinnerung tut nie, worauf die Essenz wartet.",
+                    [NoCast] = "<b>Löst hier nie aus</b>: Diese Erinnerung wird nie eingesetzt.",
+                    [NoCastOrDamage] = "<b>Löst hier nie aus</b>: Diese Erinnerung wird nie eingesetzt und verursacht keinen Schaden.",
+                    [NoCastOrShield] = "<b>Löst hier nie aus</b>: Diese Erinnerung wird nie eingesetzt und gewährt keine Barriere.",
                     [SettingBadge] = "Slot markieren",
                     [SettingTooltip] = "Zeile im Tooltip ergänzen",
                 },
@@ -75,6 +87,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>Nunca se activa aquí</b>: esta memoria ni cura ni otorga barrera.",
                     [NoDamageOrHeal] = "<b>Nunca se activa aquí</b>: esta memoria ni inflige daño ni cura.",
                     [Never] = "<b>Nunca se activa aquí</b>: esta memoria nunca hace lo que la esencia espera.",
+                    [NoCast] = "<b>Nunca se activa aquí</b>: esta memoria nunca se lanza.",
+                    [NoCastOrDamage] = "<b>Nunca se activa aquí</b>: esta memoria nunca se lanza ni inflige daño.",
+                    [NoCastOrShield] = "<b>Nunca se activa aquí</b>: esta memoria nunca se lanza ni otorga barrera.",
                     [SettingBadge] = "Marcar la ranura",
                     [SettingTooltip] = "Añadir una línea a la descripción",
                 },
@@ -86,6 +101,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir ne soigne pas et n'accorde pas de barrière.",
                     [NoDamageOrHeal] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir n'inflige aucun dégât et ne soigne pas.",
                     [Never] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir ne fait jamais ce que l'essence attend.",
+                    [NoCast] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir n'est jamais lancé.",
+                    [NoCastOrDamage] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir n'est jamais lancé et n'inflige aucun dégât.",
+                    [NoCastOrShield] = "<b>Ne se déclenche jamais ici</b>&#160;: ce souvenir n'est jamais lancé et n'accorde pas de barrière.",
                     [SettingBadge] = "Marquer l'emplacement",
                     [SettingTooltip] = "Ajouter une ligne à l'infobulle",
                 },
@@ -97,6 +115,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>Non si attiva mai qui</b>: questo ricordo non cura né concede barriere.",
                     [NoDamageOrHeal] = "<b>Non si attiva mai qui</b>: questo ricordo non infligge danni né cura.",
                     [Never] = "<b>Non si attiva mai qui</b>: questo ricordo non fa mai ciò che l'essenza attende.",
+                    [NoCast] = "<b>Non si attiva mai qui</b>: questo ricordo non viene mai lanciato.",
+                    [NoCastOrDamage] = "<b>Non si attiva mai qui</b>: questo ricordo non viene mai lanciato né infligge danni.",
+                    [NoCastOrShield] = "<b>Non si attiva mai qui</b>: questo ricordo non viene mai lanciato né concede barriere.",
                     [SettingBadge] = "Segna lo slot",
                     [SettingTooltip] = "Aggiungi una riga al tooltip",
                 },
@@ -108,6 +129,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>ここでは発動しません</b>：この記憶は回復もバリア付与もしません。",
                     [NoDamageOrHeal] = "<b>ここでは発動しません</b>：この記憶はダメージも回復も与えません。",
                     [Never] = "<b>ここでは発動しません</b>：この記憶はエッセンスが待つ動作を行いません。",
+                    [NoCast] = "<b>ここでは発動しません</b>：この記憶は使用されることがありません。",
+                    [NoCastOrDamage] = "<b>ここでは発動しません</b>：この記憶は使用されず、ダメージも与えません。",
+                    [NoCastOrShield] = "<b>ここでは発動しません</b>：この記憶は使用されず、バリアも付与しません。",
                     [SettingBadge] = "スロットに印を付ける",
                     [SettingTooltip] = "ツールチップに一行追加",
                 },
@@ -119,6 +143,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 회복도 보호막도 주지 않습니다.",
                     [NoDamageOrHeal] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 피해도 회복도 주지 않습니다.",
                     [Never] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 정수가 기다리는 일을 하지 않습니다.",
+                    [NoCast] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 사용되지 않습니다.",
+                    [NoCastOrDamage] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 사용되지 않으며 피해도 주지 않습니다.",
+                    [NoCastOrShield] = "<b>여기서는 발동하지 않습니다</b>: 이 기억은 사용되지 않으며 보호막도 주지 않습니다.",
                     [SettingBadge] = "슬롯에 표시",
                     [SettingTooltip] = "툴팁에 한 줄 추가",
                 },
@@ -130,6 +157,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie ani nie leczy, ani nie daje bariery.",
                     [NoDamageOrHeal] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie ani nie zadaje obrażeń, ani nie leczy.",
                     [Never] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie nigdy nie robi tego, na co czeka esencja.",
+                    [NoCast] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie nigdy nie jest używane.",
+                    [NoCastOrDamage] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie nigdy nie jest używane ani nie zadaje obrażeń.",
+                    [NoCastOrShield] = "<b>Nigdy się tu nie uruchomi</b>: to wspomnienie nigdy nie jest używane ani nie daje bariery.",
                     [SettingBadge] = "Oznacz slot",
                     [SettingTooltip] = "Dodaj wiersz do podpowiedzi",
                 },
@@ -141,6 +171,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>Nunca ativa aqui</b>: esta memória não cura nem concede barreira.",
                     [NoDamageOrHeal] = "<b>Nunca ativa aqui</b>: esta memória não causa dano nem cura.",
                     [Never] = "<b>Nunca ativa aqui</b>: esta memória nunca faz o que a essência espera.",
+                    [NoCast] = "<b>Nunca ativa aqui</b>: esta memória nunca é usada.",
+                    [NoCastOrDamage] = "<b>Nunca ativa aqui</b>: esta memória nunca é usada nem causa dano.",
+                    [NoCastOrShield] = "<b>Nunca ativa aqui</b>: esta memória nunca é usada nem concede barreira.",
                     [SettingBadge] = "Marcar o encaixe",
                     [SettingTooltip] = "Acrescentar uma linha à dica",
                 },
@@ -152,6 +185,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>Burada hiç tetiklenmez</b>: bu anı ne iyileştirir ne de bariyer verir.",
                     [NoDamageOrHeal] = "<b>Burada hiç tetiklenmez</b>: bu anı ne hasar verir ne de iyileştirir.",
                     [Never] = "<b>Burada hiç tetiklenmez</b>: bu anı özün beklediği şeyi hiç yapmaz.",
+                    [NoCast] = "<b>Burada hiç tetiklenmez</b>: bu anı hiç kullanılmaz.",
+                    [NoCastOrDamage] = "<b>Burada hiç tetiklenmez</b>: bu anı hiç kullanılmaz ve hasar vermez.",
+                    [NoCastOrShield] = "<b>Burada hiç tetiklenmez</b>: bu anı hiç kullanılmaz ve bariyer vermez.",
                     [SettingBadge] = "Yuvayı işaretle",
                     [SettingTooltip] = "İpucuna bir satır ekle",
                 },
@@ -163,6 +199,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>在此永不触发</b>：该记忆既不治疗也不提供护盾。",
                     [NoDamageOrHeal] = "<b>在此永不触发</b>：该记忆既不造成伤害也不治疗。",
                     [Never] = "<b>在此永不触发</b>：该记忆从不做精华所等待的事。",
+                    [NoCast] = "<b>在此永不触发</b>：该记忆从不施放。",
+                    [NoCastOrDamage] = "<b>在此永不触发</b>：该记忆从不施放，也不造成伤害。",
+                    [NoCastOrShield] = "<b>在此永不触发</b>：该记忆从不施放，也不提供护盾。",
                     [SettingBadge] = "标记槽位",
                     [SettingTooltip] = "在提示中添加一行",
                 },
@@ -174,6 +213,9 @@ namespace AreMyGemsCompatible
                     [NoHealOrShield] = "<b>在此永不觸發</b>：該記憶既不治療也不提供護盾。",
                     [NoDamageOrHeal] = "<b>在此永不觸發</b>：該記憶既不造成傷害也不治療。",
                     [Never] = "<b>在此永不觸發</b>：該記憶從不做精華所等待的事。",
+                    [NoCast] = "<b>在此永不觸發</b>：該記憶從不施放。",
+                    [NoCastOrDamage] = "<b>在此永不觸發</b>：該記憶從不施放，也不造成傷害。",
+                    [NoCastOrShield] = "<b>在此永不觸發</b>：該記憶從不施放，也不提供護盾。",
                     [SettingBadge] = "標記槽位",
                     [SettingTooltip] = "在提示中加入一行",
                 },
@@ -186,9 +228,9 @@ namespace AreMyGemsCompatible
             return Table.Get(key);
         }
 
-        // Which sentence a set of unmet needs deserves. Damage-or-shield and the three-way case
-        // cannot arise from anything the game ships and fall to the generic line rather than
-        // inventing a sentence for every combination.
+        // Which sentence a set of unmet needs deserves. The cases are the combinations the shipped
+        // essences actually have, the cast ones arising only in an identity memory. Anything else
+        // falls to the generic line rather than inventing a sentence for every combination.
         public static string ForNeeds(SlotNeed needs)
         {
             switch (needs)
@@ -198,6 +240,9 @@ namespace AreMyGemsCompatible
                 case SlotNeed.Shield: return Get(NoShield);
                 case SlotNeed.Heal | SlotNeed.Shield: return Get(NoHealOrShield);
                 case SlotNeed.Damage | SlotNeed.Heal: return Get(NoDamageOrHeal);
+                case SlotNeed.Cast: return Get(NoCast);
+                case SlotNeed.Cast | SlotNeed.Damage: return Get(NoCastOrDamage);
+                case SlotNeed.Cast | SlotNeed.Shield: return Get(NoCastOrShield);
                 default: return Get(Never);
             }
         }

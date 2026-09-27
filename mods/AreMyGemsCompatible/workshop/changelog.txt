@@ -1,3 +1,10 @@
+[h2]1.1[/h2]
+[list]
+[*]Essences in identity memories are now checked too, for when a shrine gives one an essence slot - an identity memory is never cast, so an essence that works off the cast is marked there
+[*]An identity memory is judged by what it actually does rather than by its description, so one that only raises your Attack Damage is no longer taken for a memory that deals damage
+[*]Essences in Movement memories are now checked too, for mods that give those an essence slot
+[/list]
+
 [h2]1.0[/h2]
 [list]
 [*]First release

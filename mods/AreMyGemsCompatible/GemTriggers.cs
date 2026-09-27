@@ -13,6 +13,12 @@ namespace AreMyGemsCompatible
         Damage = 1,
         Heal = 2,
         Shield = 4,
+
+        // The memory being cast at all. Every Q/W/E/R memory and every Movement memory is, so this
+        // is met wherever an essence could go until the game let identity memories take one: those
+        // are passive, AbilityTrigger.OnCastStart throws for a config that is not isActive, and
+        // neither cast event is ever raised on them.
+        Cast = 8,
     }
 
     // What an essence waits for, and whether any part of it is waiting for nothing.
@@ -23,8 +29,9 @@ namespace AreMyGemsCompatible
         public SlotNeed Needs;
 
         // Something about this essence works whatever memory it sits in - a stat bonus, a hook on
-        // the hero, an effect on every cast. An essence like that can be diminished by the wrong
-        // memory but never dead, and nothing is said about it.
+        // the hero. An essence like that can be diminished by the wrong memory but never dead, and
+        // nothing is said about it. An effect on every cast is not this any more: it is
+        // SlotNeed.Cast, because an identity memory is never cast.
         public bool AlwaysLive;
 
         // What this essence hands to the memory it sits in. An essence that creates something
@@ -47,7 +54,8 @@ namespace AreMyGemsCompatible
     // OnEquipSkill and subscribe to the memory directly, and what they reach for there is wider:
     // dealtDamageProcessor (fifteen of them), dealtHealProcessor (five), dealtShieldProcessor,
     // ActorEvent_OnGiveShield, TrackKills. All of those starve in a memory that never does the
-    // thing. AddSkillBonus and TriggerEvent_OnCastStart, in the same overrides, never starve.
+    // thing. AddSkillBonus and TriggerEvent_OnCastStart, in the same overrides, starve only in a
+    // memory that is never cast - an identity memory.
     //
     // Reading which of them an essence uses cannot be done by looking at method names alone, so
     // the two equip methods are read as IL - Harmony's PatchProcessor.ReadMethodBody hands back
@@ -61,6 +69,10 @@ namespace AreMyGemsCompatible
     internal static class GemTriggers
     {
         private static readonly Dictionary<Type, GemProfile> Cache = new Dictionary<Type, GemProfile>();
+
+        // How many method bodies have failed to read, ever. Only differences are looked at, so it
+        // never needs resetting; everything here runs on the main thread.
+        private static int _unreadable;
 
         private const BindingFlags Declared =
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
@@ -77,13 +89,21 @@ namespace AreMyGemsCompatible
             ["ActorEvent_OnGiveShield"] = SlotNeed.Shield,
         };
 
-        // Members that fire, or apply, whatever the memory does. Every memory is cast, so anything
-        // hanging off a cast event is live wherever it goes; a skill bonus is applied on equip and
-        // never waits for anything at all.
+        // Members that only matter to a memory that is cast. The three TriggerEvent_ events are
+        // raised after AbilityTrigger's own check that the config is not passive, and a SkillBonus
+        // is nothing but a cooldown multiplier, a cooldown offset and added charges - all of which
+        // a passive memory has no use for. Gem_E_Direness is only a SkillBonus, and in an identity
+        // memory it does nothing at all.
+        private static readonly string[] CastScopedOnSkill =
+        {
+            "TriggerEvent_", "AddSkillBonus", "SetCharge", "LockCooldown", "mainConfigOriginalCharge",
+        };
+
+        // Members whose effect this mod has not pinned down, and which are therefore treated as
+        // working in any memory. Getting it wrong this way round only costs a warning.
         private static readonly string[] AlwaysLiveOnSkill =
         {
-            "AddSkillBonus", "TriggerEvent_", "SetCharge", "LockCooldown", "configs", "abilityIndex",
-            "mainConfigOriginalCharge", "specialOverlayColor", "ClientTriggerEvent_",
+            "configs", "abilityIndex", "specialOverlayColor", "ClientTriggerEvent_",
         };
 
         // Members on the *hero* - or on the essence's own owner - which is a different lifetime
@@ -112,9 +132,16 @@ namespace AreMyGemsCompatible
         // The three ways an actor does something to somebody, and the two data types that carry
         // the same thing to the same place - DamageInstance ends in `dmg.Dispatch(entity, chain)`
         // rather than in a DealDamage call of its own.
+        //
+        // Two helpers do the same under another name. Actor.DoBasicAttackHit builds and dispatches
+        // the hit's DamageData as the calling actor; StatusEffect.DoShield registers a
+        // ShieldEffect, which raises InvokeOnGiveShield on the effect that made it -
+        // Se_M_DreamyWaltz_Buff is the barrier a Dreamy Waltz grants.
         private const string DealDamage = "DealDamage";
+        private const string DoBasicAttackHit = "DoBasicAttackHit";
         private const string DoHeal = "DoHeal";
         private const string GiveShield = "GiveShield";
+        private const string DoShield = "DoShield";
         private const string Dispatch = "Dispatch";
         private const string DamageData = "DamageData";
         private const string HealData = "HealData";
@@ -183,11 +210,10 @@ namespace AreMyGemsCompatible
                         case "OnDealDamage": profile.Needs |= SlotNeed.Damage; break;
                         case "OnDoHeal": profile.Needs |= SlotNeed.Heal; break;
 
-                        // Every memory raises both cast events, so an essence built on either is
-                        // live in any slot.
+                        // Live in every memory that is cast, which is every memory but an identity.
                         case "OnCastComplete":
                         case "OnCastCompleteBeforePrepare":
-                            profile.AlwaysLive = true;
+                            profile.Needs |= SlotNeed.Cast;
                             break;
 
                         case "OnEquipSkill":
@@ -275,6 +301,18 @@ namespace AreMyGemsCompatible
         //
         // Following creation onward is needed for the spawners: Gem_C_Sharp creates
         // Se_Gem_C_Sharp_ArrowSpawner, which is what creates the arrows that do the damage.
+        //
+        // PassiveMemory asks the same question of an identity memory's own code, and for it a body
+        // that could not be read matters: "found nothing" is a verdict there, and "could not look"
+        // must not become one. So it is told whether everything was read.
+        public static SlotNeed ReadCapabilities(List<Type> roots, out bool complete)
+        {
+            int before = _unreadable;
+            var found = ReadCapabilities(roots);
+            complete = _unreadable == before;
+            return found;
+        }
+
         private static SlotNeed ReadCapabilities(List<Type> roots)
         {
             var found = SlotNeed.None;
@@ -318,9 +356,13 @@ namespace AreMyGemsCompatible
         {
             switch (called.Name)
             {
-                case DealDamage: return SlotNeed.Damage;
+                case DealDamage:
+                case DoBasicAttackHit:
+                    return SlotNeed.Damage;
                 case DoHeal: return SlotNeed.Heal;
-                case GiveShield: return SlotNeed.Shield;
+                case GiveShield:
+                case DoShield:
+                    return SlotNeed.Shield;
                 case Dispatch:
                     var owner = called.DeclaringType != null ? called.DeclaringType.Name : null;
                     if (owner == DamageData) return SlotNeed.Damage;
@@ -386,6 +428,11 @@ namespace AreMyGemsCompatible
                     profile.Needs |= need;
                     recognised = true;
                     continue;
+                }
+                if (StartsWithAny(name, CastScopedOnSkill))
+                {
+                    profile.Needs |= SlotNeed.Cast;
+                    recognised = true;
                 }
                 if (StartsWithAny(name, AlwaysLiveOnSkill))
                 {
@@ -478,7 +525,9 @@ namespace AreMyGemsCompatible
             {
                 // A body that cannot be read is a body whose contents are unknown, and an
                 // unrecognised override is treated as always live. Logged rather than swallowed,
-                // because it would otherwise look like a classification result.
+                // because it would otherwise look like a classification result - and counted, for
+                // the one caller to whom an empty answer means something.
+                _unreadable++;
                 Debug.LogWarning("[AreMyGemsCompatible] cannot read " + context.Name + "." + method.Name + ": " + e.Message);
                 yield break;
             }

@@ -5,8 +5,9 @@
 *Essence of Love in a memory that neither heals nor grants a barrier: the icon faded to a quarter,
 the mark on it, and the reason under the essence's own description.*
 
-Warns about an essence that can never fire in the memory it is socketed into. Wholly client-side:
-nothing here touches an actor, a stat or a network message.
+Warns about an essence that can never fire in the memory it is socketed into — a Q/W/E/R memory,
+an identity memory given a slot by a Corrupted Chaos shrine, or a Movement memory given one by
+another mod. Wholly client-side: nothing here touches an actor, a stat or a network message.
 
 The question has two halves that are answered by completely different means, and keeping them apart
 is most of the design. **Everything about an essence is read from its code** — what it waits for,
@@ -43,7 +44,12 @@ limit themselves to virtuals. Thirty-three of the ninety-five shipped essences o
 | `dealtHealProcessor` | 5 | never heals |
 | `dealtShieldProcessor`, `ActorEvent_OnGiveShield` | 2 | never grants a barrier |
 | `TrackKills` | 2 | never kills, which needs damage |
-| `AddSkillBonus`, `TriggerEvent_OnCastStart`, `configs` | 9 | never — these always apply |
+| `AddSkillBonus`, `TriggerEvent_OnCastStart`, `SetCharge`, `LockCooldown` | — | is never cast — an identity |
+| `configs`, `abilityIndex`, `specialOverlayColor`, `ClientTriggerEvent_*` | — | never — treated as always applying |
+
+The counts in the first rows were taken when the game shipped ninety-five essences; the rows that
+follow were split later, when identity memories became socketable (see **Identity and Movement
+memories**), and are not counted separately.
 
 The three `DataProcessorGroup` fields behave exactly like the events for this purpose:
 `Actor.ProcessDealtDamage` walks the same `parentActor` chain the events do, so a processor added
@@ -63,8 +69,11 @@ classified the same way as a shipped one**.
 Getting this wrong in the loud direction is worse than saying nothing, so each of these silences
 the essence entirely:
 
-- **A cast hook.** Every memory raises both cast events, so anything built on `OnCastComplete` or
-  `OnCastCompleteBeforePrepare` is live wherever it goes.
+- **A cast hook — in a memory that is cast.** Every Q/W/E/R and Movement memory raises both cast
+  events, so anything built on `OnCastComplete` or `OnCastCompleteBeforePrepare` is live there.
+  This was the first bullet of this list as an unconditional escape, and it stopped being one when
+  identity memories took essences: they are never cast. It is now a fourth thing an essence can
+  wait for, `SlotNeed.Cast`, which every memory but an identity supplies.
 - **A hook on the hero.** `Gem_E_Twilight` subscribes to
   `newOwner.EntityEvent_OnAttackFiredBeforePrepare` in `OnEquipGem` *and* overrides `OnDealDamage`.
   Half of it ignores the slot, so the worst a memory can do to it is halve it.
@@ -144,7 +153,8 @@ audited that way round, by finding every memory the regex rejects that uses voca
 near the thing:
 
 - **Damage.** Only fourteen memories are rejected, so all fourteen were read. None deals damage;
-  eight are Movement memories with no essence slots at all.
+  eight are Movement memories, which could hold no essence then and were audited again against
+  their code once they could — see **Identity and Movement memories**.
 - **Healing.** Nine rejected memories mention Health, life, recovery, draining or absorption.
   `St_R_UnbreakableDetermination` was the one real miss — "recovers Health", a word the prose
   pattern lacks — and the variable behind it is `healLostHealthRatio`, so the field-name half
@@ -156,23 +166,24 @@ near the thing:
 
 ## What the two halves add up to
 
-Twenty-five of the ninety-five essences have nothing but slot-scoped triggers. Against the 110
-memories that can hold an essence at all — `travelerMemoryLocation` is `Identity` or `Movement` for
-the rest, and neither has essence slots — that is **281 warned pairs out of 2750, about one in
-ten**:
+The figures below are for the Q/W/E/R memories alone, as the game ships them at the time of
+writing: 105 essences and 128 such memories. Twenty-seven of the essences wait on nothing but
+damage, healing or a barrier, and that is **341 warned pairs out of 3456, about one in ten**:
 
 | essence | waits for | dead in |
 | --- | --- | --- |
-| `Gem_C_Guidance` | healing | 88 of 110 |
-| `Gem_C_Love` | healing or a barrier | 78 |
-| twenty-two others | damage | 5 each |
-| `Gem_R_Ricochet` | damage or healing | 5 |
+| `Gem_C_Guidance` | healing | 102 of 128 |
+| `Gem_C_Love` | healing or a barrier | 89 |
+| twenty-four others | damage | 6 each |
+| `Gem_R_Ricochet` | damage or healing | 6 |
 
 The shape of that is the point. The **damage** essences are the ones the name of the mod suggests
-and they are nearly always fine: only five memories a player can socket into deal no damage at all
-— `St_C_MassProtection`, `St_C_Sneeze`, `St_R_NaturesWhisper`, `St_R_Somersault`,
-`St_R_Tranquility`. The mod earns its place on the **healing** essences, which are dead in four
-memories out of five and which nothing in the game warns you about.
+and they are nearly always fine: only a handful of memories a player can socket into deal no damage
+at all — `St_C_MassProtection`, `St_C_Sneeze`, `St_R_NaturesWhisper`, `St_R_Somersault`,
+`St_R_Tranquility` among them. The mod earns its place on the **healing** essences, which are dead
+in four memories out of five and which nothing in the game warns you about.
+
+Identity and Movement memories change the picture enough to have their own section below.
 
 ![A full skill bar with nine essences and no marks on any of them](../images/aremygemscompatible-quiet.jpg)
 
@@ -300,6 +311,115 @@ subscription, which is a call-graph question rather than a name question.
 
 The consequence is bounded and falls in the quiet direction: a damage-triggered essence sharing one
 of the five no-damage memories with `Gem_R_Lava` gets no warning when it deserved one.
+
+## Identity and Movement memories
+
+Neither has essence slots to begin with, and for a long time this mod treated both as memories
+nothing could be socketed into. That stopped being true in two ways:
+
+- **Identity**, in the game itself. One of a Corrupted Chaos shrine's rewards adds an essence slot
+  to a memory of the player's choosing, identity included — `Se_Shrine_Chaos_StatBonus` sets
+  `SetMaxGemCount(HeroSkillLocation.Identity, currentAddedGemSlotIdentity)` right beside the four
+  `3 + currentAddedGemSlot…` lines for Q/W/E/R.
+- **Movement**, through other mods. `HeroSkill.maxGemCountMovement` is a syncvar like the rest, and
+  nothing in the game ever raises it.
+
+**Nothing about where the warning is drawn had to change.** `UI_InGame_GemSlot` addresses its
+essence as `(button.skillType, slotIndex)`, which is an identity or movement location as readily as
+a Q, and the tooltip reads the memory off `Gem.skill` or the drag target. What had to change was
+the verdict, and only for one of the two.
+
+### Movement: an ordinary memory
+
+A Movement memory is cast like any other, so the cast hooks are live in it, essences beside it can
+supply to it, and its description can be read the way every Q/W/E/R memory's is. The prose was
+audited against the code anyway, since these memories had never been checked with an essence in
+mind, and the two agree on all nine:
+
+| memory | does |
+| --- | --- |
+| `St_M_Charge` | damage and a barrier |
+| `St_M_FrostyCharge` | damage |
+| `St_M_DreamyWaltz` | a barrier, through `Se_M_DreamyWaltz_Buff`'s `DoShield` |
+| the other six | nothing — `Ai_GenericDodge` adds an `UncollidableEffect` and stops |
+
+So a damage-triggered essence is dead in seven of the nine, and a healing one in all of them.
+
+### Identity: never cast, and misdescribed
+
+An identity memory differs from every other in two ways, and both decide verdicts.
+
+**It is never cast.** Its configs are passive — `TriggerConfig.isActive` is false, and
+`AbilityTrigger.OnCastStart` throws "Tried to cast a passive ability" for such a config — so
+`TriggerEvent_OnCastStart`, `OnCastComplete` and `OnCastCompleteBeforePrepare` are never raised on
+it. Every essence built on the cast, which this mod had always counted as live anywhere, is dead
+there. So is a `SkillBonus`, which is nothing but a cooldown multiplier, a cooldown offset and
+added charges. That is `SlotNeed.Cast`, and it is read off the live memory's configs rather than
+off which button it sits under, so an identity with something to cast would be treated as the
+ordinary memory it then is.
+
+**Its description does not say what it does.** A passive describes what it changes about the hero,
+and the prose rules cannot tell the hero's damage from the memory's:
+
+| identity | prose says | code says | why |
+| --- | --- | --- | --- |
+| `St_D_DoubleTap` | damage | nothing | "Attack Damage" is a stat; the second shot is the hero's own rifle, `At_Atk_LacertaRifle.Shoot` |
+| `St_D_ConvergencePoint` | damage | nothing | it chains the hero's own attack instance on to more targets |
+| `St_D_ScarOfTheWind` | damage, healing | nothing | the dash attack is an override made with `Dew.CreateAbilityTrigger`, which has no parent |
+| `St_D_TheKillingFlow` | damage, healing | healing | "Attack Damage" is a stat conversion; the heal on a boss kill is its own |
+| `St_D_HeartOfThePack` | damage, healing, barrier | damage | it *listens* to the hero's heals and barriers, and answers with an explosion |
+
+Every other identity agrees, or the code finds more than the prose — the quiet direction. The five
+rows above are all the ones where the code says *no* and the prose says *yes*, which is the
+direction that costs a false warning, and each was read by hand. None of them is a miss.
+
+### Reading an identity's code
+
+Unlike a Q/W/E/R memory, a passive one does have code to read, and `PassiveMemory` reads it. Its
+behaviour is the `SkillTrigger` itself — `St_D_CircleOfLife` heals from the trigger — and the status
+effect its config applies, `TriggerConfig.appliedStatusEffect`, which is prefab data and so is read
+off the live memory. `St_D_DoubleTap` declares nothing at all; everything it does is
+`Se_D_DoubleTap`.
+
+`AbilityTrigger.UpdatePassiveEffectIfNeccessary` creates that effect with the memory as its parent,
+so whatever the effect deals, heals or shields — and whatever it creates in turn — walks up the
+`parentActor` chain to the memory, and the memory's events fire. That is exactly the question
+**What do the created things do?** answers for a supplier, so it is the same walk:
+`GemTriggers.ReadCapabilities`, from those two roots.
+
+Two things were added to that walk for this, and both apply to suppliers as well:
+
+- `StatusEffect.DoShield` counts as a barrier. It registers a `ShieldEffect`, which raises
+  `InvokeOnGiveShield` on the effect that made it.
+- `Actor.DoBasicAttackHit` counts as damage. It builds and dispatches the hit's `DamageData` as the
+  calling actor.
+
+Neither changed which essences supply anything.
+
+**A body that cannot be read makes the memory unknown**, not inert. For a supplier, a missed read
+only loses a revival; here "found nothing" is the verdict, and an unread method might have held the
+one `DealDamage` that mattered. `GemTriggers` counts failed reads, and `PassiveMemory` asks whether
+the count moved.
+
+The dump is still required. A memory in no shipped data has not been through the audit above, and
+nothing is said about it.
+
+### Siblings in an identity
+
+A supplier creates through `EventInfoCast.instance`, and a memory that is never cast never hands one
+out. So nothing revives anything in an identity memory: `Gem_C_Sharp` beside a damage-triggered
+essence in an identity that deals no damage leaves both of them dead, and says so on both.
+
+### What it adds up to
+
+| where | memories | warned pairs |
+| --- | --- | --- |
+| Q/W/E/R | 128 | 341 |
+| Movement | 9 | 191 |
+| Identity | 17 | 659, over the 15 the offline check can read |
+
+Identity is where the mod now says the most, and almost all of it is the cast: thirty-one essences
+wait on nothing else, and each of them is dead in every identity there is.
 
 ## Where the warning appears
 
@@ -432,22 +552,36 @@ that are genuinely inert.
 
 The classification runs outside the game as well as in it, which is how the rules above were
 settled. `tools/verify-gem-classification.ps1` loads `Dew.Core`, `Dew.Contents` and `0Harmony` into
-PowerShell, runs the same reflection and the same `ReadMethodBody` scan over all ninety-five
-essences, applies the same regexes to `memories.json`, and prints the matrix:
+PowerShell, runs the same reflection and the same `ReadMethodBody` scan over every essence,
+applies the same regexes to `memories.json`, reads every identity memory's code the way
+`PassiveMemory` does, and prints the matrix:
 
 ```powershell
-.\tools\verify-gem-classification.ps1          # a count per essence
+.\tools\verify-gem-classification.ps1          # a count per essence, split by where it is dead
 .\tools\verify-gem-classification.ps1 -Pairs   # every warned pair by name
 ```
 
-It prints the three numbers that have to hold — 25 essences entirely slot-scoped, 110 memories
-that can hold one, 18 essences that hand a capability to their memory — and with `-Pairs` it names
-every supplier and what it supplies. It re-measures a changed rule against every essence in the
-game in a few seconds instead of by playing, which is how each of the supplier bugs above was
-found: none of them showed up as a wrong number in the other two counts. **It is the mod's logic restated, not the mod itself** — the cost of running without Unity
+It opens with the identity audit — each identity's damage, healing and barrier as the code finds
+them, in capitals, and in lower case where only the prose claims one — and then prints the numbers
+that have to hold. At the time of writing they are 105 essences with 62 entirely slot-scoped, 152
+known memories (128 Q/W/E/R, 15 identity, 9 Movement), and 19 essences that hand a capability to
+their memory; with `-Pairs` it names every supplier and what it supplies. It re-measures a changed
+rule against every essence in the game in a few seconds instead of by playing, which is how each
+of the supplier bugs above was found: none of them showed up as a wrong number in the other two
+counts.
+
+**It is the mod's logic restated, not the mod itself** — the cost of running without Unity
 around — so a rule changed in one has to be changed in the other, and the tables are what makes a
-disagreement visible. The one thing it cannot see is `enableStatBonus`, which is prefab data:
-`Gem_E_Might` and `Gem_E_Apathy` appear warnable there and are silenced in game.
+disagreement visible. Three things it cannot see the way the game does:
+
+- `enableStatBonus`, which is prefab data: `Gem_E_Might` and `Gem_E_Apathy` appear warnable there
+  and are silenced in game.
+- `TriggerConfig`, which is prefab data too. An identity's passive effect is found by name instead,
+  `Se_D_<Name>` beside `St_D_<Name>`, and "never cast" is taken to mean the Identity location.
+- Two method bodies an identity reaches, `Se_D_AstridsMasterpiecePriorite.CheckExposed` and
+  `Ai_D_ExoticMatter_Projectile.OnCreate`, do not load outside the game ("Non-abstract, non-.cctor
+  method in an interface"). Those two memories come out unknown there, exactly as they would in
+  game if the same read failed — which is why it says 15 identities and not 17.
 
 ## In co-op
 

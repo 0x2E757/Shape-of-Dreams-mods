@@ -5,15 +5,18 @@
 #
 #   * what an essence waits for - the same reflection and the same
 #     PatchProcessor.ReadMethodBody scan of OnEquipSkill and OnEquipGem that GemTriggers does;
-#   * what a memory does - the same regexes MemoryFacts applies to RawData\en-US\memories.json.
+#   * what a memory does - the same regexes MemoryFacts applies to RawData\en-US\memories.json,
+#     and for an identity memory, which is passive, the same code reading PassiveMemory does.
 #
 # It is the mod's own logic re-stated rather than the mod itself, which is the cost of running it
 # without Unity around. **When a rule changes in one, change it in the other**; a disagreement
 # between this and the game is a bug in whichever was edited last, and the tables below are what
 # makes it visible.
 #
-# One thing it cannot see: enableStatBonus is prefab data rather than code, so Gem_E_Might and
-# Gem_E_Apathy appear warnable here and are silenced in game. That gap is expected.
+# Two things it cannot see, both prefab data rather than code. enableStatBonus: Gem_E_Might and
+# Gem_E_Apathy appear warnable here and are silenced in game. TriggerConfig: which memories are
+# passive, and which status effect a passive applies, are guessed here from the Identity location
+# and the Se_D_/St_D_ naming. Both gaps are expected.
 param(
     [string]$GameDir = "C:\Program Files (x86)\Steam\steamapps\common\Shape of Dreams",
 
@@ -68,8 +71,10 @@ $slotScoped = @{
     'dealtHealProcessor'   = 'Heal';   'ActorEvent_OnDoHeal'     = 'Heal'
     'dealtShieldProcessor' = 'Shield'; 'ActorEvent_OnGiveShield' = 'Shield'
 }
-$aliveOnSkill = @('AddSkillBonus', 'TriggerEvent_', 'SetCharge', 'LockCooldown', 'configs',
-                  'abilityIndex', 'mainConfigOriginalCharge', 'specialOverlayColor', 'ClientTriggerEvent_')
+# Cast events, and the cooldown and charges a SkillBonus is made of: live in every memory that is
+# ever cast, and in no memory that is not. An identity memory is passive and never cast.
+$castOnSkill = @('TriggerEvent_', 'AddSkillBonus', 'SetCharge', 'LockCooldown', 'mainConfigOriginalCharge')
+$aliveOnSkill = @('configs', 'abilityIndex', 'specialOverlayColor', 'ClientTriggerEvent_')
 $aliveOnHero = @('EntityEvent_', 'ActorEvent_', 'ClientHeroEvent_', 'ClientEntityEvent_',
                  'takenDamageProcessor', 'AddStatBonus', 'CreateStatusEffect', 'CreateBasicEffect',
                  'TrackKills', 'get_Status', 'get_Ability')
@@ -116,10 +121,12 @@ function Get-WithBases($type) {
     return $out
 }
 
-# The resolved operands of a method body, without the name flattening.
+# The resolved operands of a method body, without the name flattening. A body that cannot be read
+# is counted, because for a passive memory "found nothing" is a verdict and "could not look" is not.
+$script:unreadable = 0
 function Get-Operands($method) {
     $out = New-Object System.Collections.ArrayList
-    try { $body = $readBody.Invoke($null, @([System.Reflection.MethodBase]$method)) } catch { return $out }
+    try { $body = $readBody.Invoke($null, @([System.Reflection.MethodBase]$method)) } catch { $script:unreadable++; return $out }
     foreach ($pair in $body) { if ($null -ne $pair.Value) { [void]$out.Add($pair.Value) } }
     return $out
 }
@@ -140,9 +147,11 @@ function Get-Capabilities($rootTypes) {
                         if ($o -isnot [System.Reflection.MethodBase]) { continue }
                         $dt = if ($null -ne $o.DeclaringType) { $o.DeclaringType.Name } else { '' }
                         switch ($o.Name) {
-                            'DealDamage' { [void]$caps.Add('Damage') }
-                            'DoHeal'     { [void]$caps.Add('Heal') }
-                            'GiveShield' { [void]$caps.Add('Shield') }
+                            'DealDamage'       { [void]$caps.Add('Damage') }
+                            'DoBasicAttackHit' { [void]$caps.Add('Damage') }
+                            'DoHeal'           { [void]$caps.Add('Heal') }
+                            'GiveShield'       { [void]$caps.Add('Shield') }
+                            'DoShield'         { [void]$caps.Add('Shield') }
                             'Dispatch'   {
                                 if ($dt -eq 'DamageData') { [void]$caps.Add('Damage') }
                                 elseif ($dt -eq 'HealData') { [void]$caps.Add('Heal') }
@@ -159,7 +168,8 @@ function Get-Capabilities($rootTypes) {
         }
         $frontier = @($next)
     }
-    return $caps
+    # The comma keeps an empty set a set: PowerShell would otherwise unroll it into $null.
+    return ,$caps
 }
 
 # Every member a method touches, following the essence's own methods one level down so that an
@@ -196,12 +206,13 @@ $essences = foreach ($gem in ($types | Where-Object { $_ -ne $gemBase -and $gemB
             switch ($m.Name) {
                 'OnDealDamage' { [void]$needs.Add('Damage') }
                 'OnDoHeal'     { [void]$needs.Add('Heal') }
-                'OnCastComplete'              { $alwaysLive = $true }
-                'OnCastCompleteBeforePrepare' { $alwaysLive = $true }
+                'OnCastComplete'              { [void]$needs.Add('Cast') }
+                'OnCastCompleteBeforePrepare' { [void]$needs.Add('Cast') }
                 'OnEquipSkill' {
                     $recognised = $false
                     foreach ($n in (Get-MemberNames $m $true)) {
                         if ($slotScoped.ContainsKey($n)) { [void]$needs.Add($slotScoped[$n]); $recognised = $true; continue }
+                        foreach ($p in $castOnSkill) { if ($n.StartsWith($p, 'Ordinal')) { [void]$needs.Add('Cast'); $recognised = $true; break } }
                         foreach ($p in $aliveOnSkill) { if ($n.StartsWith($p, 'Ordinal')) { $alwaysLive = $true; $recognised = $true; break } }
                     }
                     # Unknown is not the same as dead.
@@ -263,31 +274,89 @@ $dump = Join-Path $GameDir "RawData\en-US\memories.json"
 if (-not (Test-Path $dump)) { throw "no memory dump at $dump" }
 $memories = Get-Content $dump -Raw | ConvertFrom-Json
 
+# A passive memory is read from its code instead - the SkillTrigger and the status effect its
+# passive config applies. In the game that effect is TriggerConfig.appliedStatusEffect on the live
+# memory; here there is no prefab to ask, so it is found by the name the game gives it, Se_D_<Name>
+# beside St_D_<Name>. Likewise "passive" is TriggerConfig.isActive in the game and the Identity
+# location here.
+$typeByName = @{}
+foreach ($t in $types) { if (-not $typeByName.ContainsKey($t.FullName)) { $typeByName[$t.FullName] = $t } }
+
+function Get-CodeFacts($memoryName) {
+    $roots = New-Object System.Collections.ArrayList
+    if ($typeByName.ContainsKey($memoryName)) { [void]$roots.Add($typeByName[$memoryName]) }
+    $effect = $memoryName -replace '^St_', 'Se_'
+    if ($typeByName.ContainsKey($effect)) { [void]$roots.Add($typeByName[$effect]) }
+    if ($roots.Count -eq 0) { return $null }
+
+    # Outside the game a few bodies do not load - Se_D_AstridsMasterpiecePriorite.CheckExposed is
+    # one - and a memory whose code could not all be read is unknown, exactly as in the mod.
+    $before = $script:unreadable
+    $caps = Get-Capabilities $roots
+    if ($script:unreadable -ne $before) { return $null }
+    return ,$caps
+}
+
 $facts = @{}
 foreach ($p in @($memories.PSObject.Properties)) {
     $prose = $p.Value.rawDesc -replace '<[^>]+>', ' '
     $vars = (($p.Value.rawDescVars | ForEach-Object { $_.raw }) -join ' ')
+    # travelerMemoryLocation is Identity or Movement for a hero's own two, a letter or two for a
+    # hero's starting Q/W/E/R memory, and empty for everything found in a run.
+    $location = switch ($p.Value.travelerMemoryLocation) { 'Identity' { 'Identity' } 'Movement' { 'Movement' } default { 'active' } }
+    $passive = $location -eq 'Identity'
+
+    $proseDamage = ($prose -match $damageProse) -or ($vars -match $damageVar)
+    $proseHeal   = ($prose -match $healProse)   -or ($vars -match $healVar)
+    $proseShield = ($prose -match $shieldProse) -or ($vars -match $shieldVar)
+
+    $code = if ($passive) { Get-CodeFacts $p.Name } else { $null }
     $facts[$p.Name] = [pscustomobject]@{
-        Location = $p.Value.travelerMemoryLocation
-        Damage   = ($prose -match $damageProse) -or ($vars -match $damageVar)
-        Heal     = ($prose -match $healProse)   -or ($vars -match $healVar)
-        Shield   = ($prose -match $shieldProse) -or ($vars -match $shieldVar)
+        Location    = $location
+        Cast        = -not $passive
+        Damage      = if ($passive) { $null -ne $code -and $code.Contains('Damage') } else { $proseDamage }
+        Heal        = if ($passive) { $null -ne $code -and $code.Contains('Heal') }   else { $proseHeal }
+        Shield      = if ($passive) { $null -ne $code -and $code.Contains('Shield') } else { $proseShield }
+        Known       = (-not $passive) -or $null -ne $code
+        ProseDamage = $proseDamage
+        ProseHeal   = $proseHeal
+        ProseShield = $proseShield
     }
 }
 
-# Identity and Movement memories have no essence slots in the base game, so a verdict about one
-# is a verdict about a pairing that cannot happen.
-$slottable = @($facts.Keys | Where-Object { $facts[$_].Location -notin @('Identity', 'Movement') } | Sort-Object)
+# Every memory in the dump can hold an essence: a Corrupted Chaos shrine adds a slot to any of
+# them, identity included, and other mods add slots to Movement.
+$slottable = @($facts.Keys | Where-Object { $facts[$_].Known } | Sort-Object)
+
+# Where code and prose disagree about a passive memory. Code saying "no" where prose says "yes" is
+# the direction that would cost a false warning, so every row of it has to be accounted for.
+$passiveNames = @($facts.Keys | Where-Object { -not $facts[$_].Cast } | Sort-Object)
+Write-Host ""
+Write-Host "passive memories, code against prose (D H S; lower case = prose only, - = neither):" -ForegroundColor Cyan
+foreach ($n in $passiveNames) {
+    $f = $facts[$n]
+    $cell = {
+        param($code, $prose, $letter)
+        if ($code) { $letter } elseif ($prose) { $letter.ToLower() } else { '-' }
+    }
+    "  {0,-34} {1} {2} {3}{4}" -f $n, (& $cell $f.Damage $f.ProseDamage 'D'), (& $cell $f.Heal $f.ProseHeal 'H'),
+        (& $cell $f.Shield $f.ProseShield 'S'), $(if (-not $f.Known) { '   unknown: code not found or not readable' } else { '' })
+}
 
 # --- The pairing ------------------------------------------------------------------------------
 
 $warnable = @($essences | Where-Object { $_.Needs -ne '' -and -not $_.AlwaysLive })
 
-$suppliers = @($essences | Where-Object { $_.AlwaysLive -and $_.Supplies -ne '' })
+# A supplier creates through the cast, so it supplies only in a memory that is cast, and only while
+# it fires there at all.
+$suppliers = @($essences | Where-Object { $_.Supplies -ne '' -and ($_.AlwaysLive -or ($_.Needs -split '\|') -contains 'Cast') })
+
+$byLocation = $slottable | Group-Object { $facts[$_].Location } | Sort-Object Name |
+    ForEach-Object { "$($_.Count) $($_.Name)" }
 
 Write-Host ""
 Write-Host "$($essences.Count) essences, $($warnable.Count) of them entirely slot-scoped" -ForegroundColor Cyan
-Write-Host "$($facts.Count) memories, $($slottable.Count) of them able to hold an essence" -ForegroundColor Cyan
+Write-Host "$($facts.Count) memories, $($slottable.Count) of them known ($($byLocation -join ', '))" -ForegroundColor Cyan
 Write-Host "$($suppliers.Count) essences hand a capability to their memory and can revive a neighbour" -ForegroundColor Cyan
 Write-Host ""
 if ($Pairs) { $suppliers | ForEach-Object { "  supplies {0,-14} {1}" -f $_.Supplies, $_.Gem }; Write-Host "" }
@@ -299,13 +368,16 @@ foreach ($e in ($warnable | Sort-Object Gem)) {
         $f = $facts[$name]
         $alive = $false
         foreach ($n in $needs) {
-            if (($n -eq 'Damage' -and $f.Damage) -or ($n -eq 'Heal' -and $f.Heal) -or ($n -eq 'Shield' -and $f.Shield)) { $alive = $true }
+            if (($n -eq 'Damage' -and $f.Damage) -or ($n -eq 'Heal' -and $f.Heal) -or
+                ($n -eq 'Shield' -and $f.Shield) -or ($n -eq 'Cast' -and $f.Cast)) { $alive = $true }
         }
         if (-not $alive) { $name }
     }
     $dead = @($dead)
     $total += $dead.Count
-    "{0,-24} {1,-12} dead in {2,3} of {3}" -f $e.Gem, $e.Needs, $dead.Count, $slottable.Count
+    $where = @($dead | Group-Object { $facts[$_].Location } | Sort-Object Name |
+        ForEach-Object { "$($_.Count) $($_.Name)" }) -join ', '
+    "{0,-24} {1,-17} dead in {2,3} of {3}   {4}" -f $e.Gem, $e.Needs, $dead.Count, $slottable.Count, $where
     if ($Pairs) { $dead | ForEach-Object { "                             $_" } }
 }
 

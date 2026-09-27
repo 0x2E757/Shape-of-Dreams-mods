@@ -42,6 +42,7 @@ namespace AreMyGemsCompatible
     // Warns about an essence that can never fire in the memory it is socketed into.
     //
     //     MemoryFacts.cs   what a memory does, read out of the game's own English data dump
+    //     PassiveMemory.cs what an identity memory does, which its code says and its prose does not
     //     GemTriggers.cs   what an essence waits for, read off the live type by reflection
     //     Verdict.cs       the pairing, and the two ways an essence is saved from the verdict
     //     TooltipWarning.cs  the line under the essence's description
@@ -99,8 +100,9 @@ namespace AreMyGemsCompatible
             // fallback list would keep a destroyed asset in it for the rest of the session.
             TooltipSprite.Detach();
 
-            // Both caches are keyed by types from assemblies that stay loaded, but a reload should
+            // The caches are keyed by types from assemblies that stay loaded, but a reload should
             // re-read the game's data rather than trust what a previous copy of the mod parsed.
+            // MemoryData.Reset takes PassiveMemory's with it.
             GemTriggers.ClearCache();
             MemoryData.Reset();
 

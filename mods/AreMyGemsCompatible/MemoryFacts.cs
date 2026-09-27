@@ -7,12 +7,15 @@ using UnityEngine;
 
 namespace AreMyGemsCompatible
 {
-    // What a memory is capable of: the three things an essence can wait for and never get.
+    // What a memory is capable of: the four things an essence can wait for and never get.
     internal struct MemoryFacts
     {
         public bool DealsDamage;
         public bool Heals;
         public bool Shields;
+
+        // False only for a passive memory - an identity - which PassiveMemory describes.
+        public bool IsCast;
 
         // A memory the dump does not mention at all - one a later patch adds, or one another mod
         // brings - is not "does nothing", it is "not known", and nothing is said about it.
@@ -30,6 +33,11 @@ namespace AreMyGemsCompatible
     // St_C_IceBlock declares nothing but Mirror's generated stub - since a memory's behaviour
     // lives in its prefab, in the ability instances its TriggerConfigs point at. There is no code
     // to ask.
+    //
+    // The exception is a passive memory, which is what an identity is. There the prose is what is
+    // unreliable - it describes the hero's stats and attacks, not the memory's own doing - and
+    // there is code to ask, so PassiveMemory answers instead. The dump still decides whether the
+    // memory is known at all.
     //
     // Essences are not read here at all, though the file beside this one describes them just as
     // fully, and that is a decision rather than an omission. An essence *does* have code, and its
@@ -80,10 +88,14 @@ namespace AreMyGemsCompatible
         public static MemoryFacts Get(SkillTrigger skill)
         {
             if (skill == null) return default(MemoryFacts);
-            return Get(skill.GetType().Name);
+
+            var described = Get(skill.GetType().Name);
+            if (!described.IsKnown) return described;
+
+            return PassiveMemory.IsPassive(skill) ? PassiveMemory.Read(skill) : described;
         }
 
-        public static MemoryFacts Get(string typeName)
+        private static MemoryFacts Get(string typeName)
         {
             Load();
             MemoryFacts facts;
@@ -95,6 +107,7 @@ namespace AreMyGemsCompatible
         {
             _loaded = false;
             _memories = null;
+            PassiveMemory.Reset();
         }
 
         private static void Load()
@@ -136,6 +149,7 @@ namespace AreMyGemsCompatible
                 result[entry.Key] = new MemoryFacts
                 {
                     IsKnown = true,
+                    IsCast = true,
                     DealsDamage = DamageProse.IsMatch(prose) || DamageVar.IsMatch(vars),
                     Heals = HealProse.IsMatch(prose) || HealVar.IsMatch(vars),
                     Shields = ShieldProse.IsMatch(prose) || ShieldVar.IsMatch(vars),
