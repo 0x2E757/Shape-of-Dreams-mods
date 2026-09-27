@@ -12,7 +12,7 @@ namespace BuildWhileDown
     // still waiting for someone to reach your soul.
     //
     //     Down.cs           the one question every patch asks, and the two stand-in properties
-    //     EditWhileDown.cs  the four places the game says no, and the two it says it in twice
+    //     EditWhileDown.cs  the places the game says no, and how each is turned around
     //     GroundDrops.cs    the one thing that must not be allowed through with the rest
     //
     // **There are no settings**, and that is a decision rather than an omission: the only one it
@@ -52,6 +52,9 @@ namespace BuildWhileDown
             // Pass the id. The stock template's bare UnpatchAll() takes out every patch in the
             // process, other mods' included.
             harmony.UnpatchAll(harmony.Id);
+
+            // After, so that the repaint is answered by the game's own logic and not ours.
+            Repaint.AsTheGameWould();
             Debug.Log("[BuildWhileDown] unloaded: " + mod.metadata.id);
         }
     }

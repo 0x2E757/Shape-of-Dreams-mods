@@ -15,7 +15,8 @@ namespace BuildWhileDown
     //      shouldProcessCharacterInput. This is the one that matters; without it nothing opens.
     //   2. EditSkillManager.LogicUpdate closes an open edit as soon as spectating begins.
     //   3. UI_InGame_SkillButtonsBottomBar.UpdateVis fades the bar to alpha 0 while spectating, so
-    //      even an open edit would be invisible.
+    //      even an open edit would be invisible - and UI_InGame_SkillButtons, under it, switches
+    //      its whole Canvas off.
     //   4. Two input triggers - the toggle key and the interact key that leaves edit mode - are
     //      built with lambdas that read shouldProcessCharacterInput.
     //
@@ -138,6 +139,57 @@ namespace BuildWhileDown
         {
             return Swap.Calls(code, Targets.IsSpectating, Targets.OurSpectating,
                               1, "UI_InGame_SkillButtonsBottomBar.UpdateVis");
+        }
+    }
+
+    // The loadout's own canvas, and the refusal 1.0 missed. The bar
+    // above only fades; UI_InGame_SkillButtons, which the bar sits on, switches its whole Canvas
+    // off the moment spectating starts - so in co-op the loadout vanished two seconds after the
+    // knockout, and a disabled canvas takes its raycasts with it. Single player never spectates,
+    // which is why nothing looked wrong there.
+    //
+    // The handler takes the new value as its argument rather than reading isSpectating, so there
+    // is no property to swap: the argument is answered instead, with the same question
+    // Down.Spectating asks. By index, since the name is the compiler's and not a promise.
+    //
+    // Like the bar, it is repainted only by the event, and the event fires while the hero is
+    // down - which is when the answer is no.
+    [HarmonyPatch(typeof(UI_InGame_SkillButtons), "OnIsSpectatingChanged")]
+    internal static class SkillButtonsCanvasPatch
+    {
+        private static void Prefix(ref bool __0)
+        {
+            if (__0 && Down.Editing()) __0 = false;
+        }
+    }
+
+    // Unpatching takes the lies back but not their effects: a bar and a canvas left visible while
+    // the camera is on a teammate stay visible until the next event. Asking both to repaint once
+    // the patches are gone puts them where the game would have them.
+    internal static class Repaint
+    {
+        public static void AsTheGameWould()
+        {
+            var camera = CameraManager.softInstance;
+            if (camera == null) return;
+
+            // A mod being unloaded is the wrong moment to throw into the loader, and a repaint
+            // that fails leaves things no worse than not trying.
+            try
+            {
+                var buttons = UI_InGame_SkillButtons.softInstance;
+                if (buttons != null)
+                    AccessTools.Method(typeof(UI_InGame_SkillButtons), "OnIsSpectatingChanged")
+                        ?.Invoke(buttons, new object[] { camera.isSpectating });
+
+                var bar = Object.FindAnyObjectByType<UI_InGame_SkillButtonsBottomBar>();
+                if (bar != null)
+                    AccessTools.Method(typeof(UI_InGame_SkillButtonsBottomBar), "UpdateVis")?.Invoke(bar, null);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[BuildWhileDown] could not hand the loadout's visibility back: " + e);
+            }
         }
     }
 

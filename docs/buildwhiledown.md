@@ -60,19 +60,58 @@ else if (DewPlayer.local.hero.isKnockedOut && !GameManager.instance.isGameConclu
          && DewPlayer.gamePlayers.Count > 1)
 ```
 
-and three separate places take `isSpectating` to mean "this player is a bystander now" — the two
-`EditSkillManager` methods above and the bottom bar. Without those three, the mod would work in
-single player and for about two seconds of a co-op death, which is a worse thing to ship than
-nothing.
+and four separate places take it to mean "this player is a bystander now" — the two
+`EditSkillManager` methods above, the bottom bar, and the skill buttons under it. Without those four,
+the mod works in single player and for about two seconds of a co-op death, which is a worse thing to
+ship than nothing.
 
-`Down.Spectating` is the stand-in, and it lies **only** to those three. The camera itself goes on
+`Down.Spectating` is the stand-in, and it lies **only** to those four. The camera itself goes on
 spectating and should: following a living teammate is the right place for it, and the bottom bar
 draws your own loadout regardless of who the camera is on.
+
+**The first version handled three of the four, and that was the co-op bug** (1.0, uploaded but
+never public). The fourth is not a property
+read, so a search for `isSpectating` readers does not find it:
+
+```csharp
+// UI_InGame_SkillButtons (Dew.UI)
+private void OnIsSpectatingChanged(bool obj) { _canvas.enabled = !obj; }
+```
+
+The bottom bar only *fades*; this switches the whole canvas the loadout is drawn on **off**, and a
+disabled canvas also stops raycasting, so the edit screen was neither visible nor clickable from the
+moment the camera moved to a teammate. `SkillButtonsCanvasPatch` answers the argument rather than a
+property — `obj && !Down.Editing()` — by index (`__0`), since the parameter's name is the
+compiler's. `UI_InGame_HeroInfoBar` does the same to its own canvas and is left alone: it is the
+health bar, not the loadout.
+
+The lesson for the next one of these: find every subscriber to `CameraManager.onIsSpectatingChanged`
+as well as every reader of `isSpectating`. In `Dew.UI` they are `UI_InGame_SkillButtons`,
+`UI_InGame_SkillButtonsBottomBar`, `UI_InGame_HeroInfoBar`, `UI_InGame_VisibilityOnSpectate`,
+`UI_InGame_SpectateIndicator` and `UI_InGame_TimerDisplay`.
 
 `UI_InGame_VisibilityOnSpectate` also hides things on spectate, from a per-prefab `hideOnSpectate`
 flag, and is deliberately left alone — the existence of `UI_InGame_SkillButtonsBottomBar`, whose
 whole job is the skill bar's visibility including the spectate case, is the evidence that the skill
-bar is not also under one. **This is the thing to check first in a live co-op test.**
+bar is not also under one.
+
+Unpatching takes the stand-ins away but not what they left on screen, so `OnDestroy` ends with
+`Repaint.AsTheGameWould`: the two handlers are called once more, now answered by the game alone.
+
+## Testing it alone
+
+The spectate camera starts only when another player is standing, so none of this can be seen in a
+game of one. DevTools' command server (Debug builds) fakes the part the interface reads:
+
+```
+devcmd down on     # hero.isKnockedOut, game over off, isSpectating + onIsSpectatingChanged(true)
+devcmd edit on     # StartRegularEdit, bypassing the key's gates - it tests what happens after
+devcmd loadout     # canvases, alphas and hideOnSpectate between the buttons and the screen
+devcmd down off    # stands the hero up; the camera ends spectating on its next logic update
+```
+
+Only the SyncVar is set, not `Se_HeroKnockedOut`, so there is no stun, soul or shrine — enough for
+the interface, not a substitute for a real co-op knockout.
 
 ## Transpilers, and why not a scoped gate
 
