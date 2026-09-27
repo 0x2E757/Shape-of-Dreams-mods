@@ -69,6 +69,9 @@ namespace DevTools
 
         // Which of DevPanel.TestEssences the spawn button hands out.
         [HideInInspector] public int testEssence;
+
+        // Which of DevPanel.TestMemories the spawn button hands out.
+        [HideInInspector] public int testMemory;
     }
 
     // Named DevToolsMod rather than DevTools, unlike its two siblings, because a class with the

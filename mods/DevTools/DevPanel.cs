@@ -55,6 +55,9 @@ namespace DevTools
         private TextMeshProUGUI _testEssenceText;
         private Button _testEssenceButton;
         private string _testEssenceLabel = "";
+        private TextMeshProUGUI _testMemoryText;
+        private Button _testMemoryButton;
+        private string _testMemoryLabel = "";
         private TextMeshProUGUI _statusText;
         private Button[] _actionButtons;
         private Button _godButton;
@@ -131,6 +134,7 @@ namespace DevTools
             _movementSlotsText = NumberRow(_box, "Movement slots",
                                            d => SlotsDelta(HeroSkillLocation.Movement, d));
             _testEssenceText = NumberRow(_box, "Test essence", TestEssenceDelta);
+            _testMemoryText = NumberRow(_box, "Test memory", TestMemoryDelta);
 
             // Left interactable whatever the hero is doing, unlike the buttons below it: it is a
             // switch rather than an action, and setting it before a run starts so that the run
@@ -144,6 +148,8 @@ namespace DevTools
                 ActionButton(_box, "Spawn random essence", () => DevActions.SpawnEssence(_config.itemLevel)),
                 _testEssenceButton = ActionButton(_box, "", () => DevActions.SpawnEssence(
                                                       TestEssence.typeName, _config.itemLevel)),
+                _testMemoryButton = ActionButton(_box, "", () => DevActions.SpawnMemory(
+                                                     TestMemory.typeName, _config.itemLevel)),
                 ActionButton(_box, "Spawn Apple of Discord",
                              () => DevActions.SpawnEssence("Gem_L_ChaosApple", _config.itemLevel)),
                 ActionButton(_box, "Knock out hero", DevActions.KillHero),
@@ -562,6 +568,51 @@ namespace DevTools
             DewGUI.SetText(_testEssenceButton.gameObject, label);
         }
 
+        // ----- memories for TransparentEffects ---------------------------------------
+        //
+        // Skills whose effect on screen is several objects rather than one - a cast instance and
+        // the projectile it fires, a spawner and its shards, a projectile and the explosion it
+        // leaves - so that the parts can be compared at one setting. The note says what the parts
+        // are. Doomsday Meteor is the control: both its instances carry
+        // IOtherPlayersTonedDownDisable, which TransparentEffects honours, so it should not dim
+        // at all. Precision Shot is Lacerta's own and is refused by the spawn button; it stays in
+        // the list because it is the plainest case of all, for whoever is playing her.
+        private static readonly (string typeName, string note)[] TestMemories =
+        {
+            ("St_C_Pew", "cast instance + projectile"),
+            ("St_C_Starfall", "shot flash at caster + projectiles"),
+            ("St_R_Scattershot", "spawner + projectiles + empowered hit"),
+            ("St_R_DarkGrenade", "grenade + explosion + shards"),
+            ("St_R_Cataclysm", "meteor flight + impact + burn"),
+            ("St_E_DoomsdayMeteor", "control: vetoed by the game, never dimmed"),
+            ("St_E_Blink", "five effects in one instance"),
+            ("St_L_SoulKiller", "main instance + souls"),
+            ("St_L_Blizzard", "storm + damage instances"),
+            ("St_R_PrecisionShot", "Lacerta's R: cast + projectile"),
+        };
+
+        private (string typeName, string note) TestMemory =>
+            TestMemories[Mathf.Clamp(_config.testMemory, 0, TestMemories.Length - 1)];
+
+        private void TestMemoryDelta(int delta)
+        {
+            int count = TestMemories.Length;
+            _config.testMemory = ((_config.testMemory + Math.Sign(delta)) % count + count) % count;
+            _save?.Invoke();
+            _status = TestMemory.typeName + " - " + TestMemory.note;
+        }
+
+        private void LabelTestMemoryButton()
+        {
+            if (_testMemoryButton == null) return;
+
+            string label = "Spawn " + TestMemory.typeName.Replace("St_", "");
+            if (label == _testMemoryLabel) return;
+
+            _testMemoryLabel = label;
+            DewGUI.SetText(_testMemoryButton.gameObject, label);
+        }
+
         private static string NodeCaption(ZoneManager zone, int node)
         {
             string room = zone.nodes[node].room;
@@ -590,6 +641,9 @@ namespace DevTools
             _testEssenceText.text = (Mathf.Clamp(_config.testEssence, 0, TestEssences.Length - 1) + 1) +
                                     "/" + TestEssences.Length;
             LabelTestEssenceButton();
+            _testMemoryText.text = (Mathf.Clamp(_config.testMemory, 0, TestMemories.Length - 1) + 1) +
+                                   "/" + TestMemories.Length;
+            LabelTestMemoryButton();
 
             // Every frame, because a room load replaces the hero and takes the granted bonus with
             // it. Asking for the state that is wanted rather than for a change is what makes that

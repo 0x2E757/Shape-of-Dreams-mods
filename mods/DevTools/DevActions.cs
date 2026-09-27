@@ -104,6 +104,22 @@ namespace DevTools
             return $"memory {template.GetType().Name} +{Mathf.Max(1, level) - 1}";
         }
 
+        // A named memory, for TransparentEffects: its test cases are particular skills whose
+        // effect is built from several parts. A hero's own kit is refused rather than spawned -
+        // those are SkillTriggers too and GetByShortTypeName finds them just the same, but one
+        // lying on the floor for another hero to pick up is not a state the game ever makes.
+        public static string SpawnMemory(string typeName, int level)
+        {
+            if (!CanAct(out string reason)) return reason;
+
+            var template = DewResources.GetByShortTypeName<SkillTrigger>(typeName);
+            if (template == null) return $"no memory named {typeName}";
+            if (template.isCharacterSkill) return $"{typeName} is a hero's own skill - play that hero";
+
+            Dew.CreateSkillTrigger(template, SpawnPosition(), Mathf.Max(1, level), LocalPlayer, null);
+            return $"memory {template.GetType().Name} +{Mathf.Max(1, level) - 1}";
+        }
+
         public static string SpawnEssence(int quality)
         {
             if (!CanAct(out string reason)) return reason;
