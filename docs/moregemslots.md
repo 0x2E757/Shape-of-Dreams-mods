@@ -24,12 +24,33 @@ and displays no `+`, so the number the player reads off it is `level - 1`. Compa
 against the level directly is off by one, and off by one in the direction that is hard to notice:
 everything still works, it just triggers a level early.
 
-Q/W/E/R are governed by the formula; Identity and Movement have no essence slots in the base
-game and are left that way.
+Q/W/E/R are governed by the formula. **The formula is their whole count**: `Apply` writes it
+whenever the live `maxGemCount` differs, whatever else set it. That includes a Corrupted Chaos
+shrine, one of whose rewards adds an essence slot to a memory the player picks.
+`Se_Shrine_Chaos_StatBonus` writes `3 + currentAddedGemSlotQ` and its siblings, and on the next
+frame this mod writes the formula's number back over it, so a slot the shrine adds to Q/W/E/R does
+not survive while the mod is on. The shrine also refuses to add a slot to a memory already at four
+(`addedEssenceSlotMax`), which with the formula's extra slots rules out more memories as a run goes
+on.
+
+Identity and Movement are not governed by the formula, and their counts are never written:
+
+- **Identity** starts with no slots, but the same shrine reward can target it —
+  `Se_Shrine_Chaos_StatBonus` sets `SetMaxGemCount(HeroSkillLocation.Identity,
+  currentAddedGemSlotIdentity)`, from a base of zero, up to the shrine's limit of four. That number
+  is left exactly as the shrine set it.
+- **Movement** has no slots and nothing in the game adds any — `AddEssenceSlotBonus` throws on
+  `HeroSkillLocation.Movement`. Only another mod can give it slots, and that count is left alone
+  too.
+
+Their slots are still **drawn** by this mod. `GemLayoutPatch` replaces the layout of every gem group
+on the bar, the identity and movement buttons included, so whatever count they end up with is laid
+out by the same arrangement as the rest.
 
 The four thresholds are the mod's entire config surface. Everything else — the base count, the
-ceiling, the whole of the layout geometry — is a constant, because it is either derived from
-those numbers or was settled by measurement and has no business being a knob.
+ceiling, the whole of the layout geometry — is fixed in code rather than offered as a setting,
+because it is either derived from those numbers or was settled by measurement and has no business
+being a knob.
 
 ## Losing slots
 
@@ -75,28 +96,31 @@ is everything it can draw:
  5 6 7
 ```
 
-`GemLayoutPatch.MaxSupportedSlots` is the single source of that number. `maxSlots` in the config
-is clamped to it, and the periodic apply clamps the live `maxGemCount` down to it as well — so a
-Corrupted Chaos shrine granting an extra slot on top of seven cannot push the count to eight and
-make the slots vanish again.
+`GemLayoutPatch.MaxSupportedSlots` is the single source of that number, and the formula is clamped
+to it. Since the formula overwrites whatever else set a Q/W/E/R count, nothing can push those past
+seven and make the slots vanish again. Identity and Movement counts are not clamped, because this
+mod never writes them: the shrine stops identity at four, and a Movement or identity count some
+other mod sets above seven is more than the arrangement was built to draw.
 
-Five and six take the **first positions of that same seven-slot grid** rather than being laid out
-on their own. Laying each count out independently meant a slot moved every time the next one was
-added, which read badly at six. `centerPartialBottomRow` switches back to per-count centring.
+Five, six and seven share **one fixed grid for the bottom row** rather than being laid out on
+their own. Laying each count out independently meant a slot moved every time the next one was
+added, which read badly at six. Six takes the grid's first two positions from the left, and seven
+all three. Five is the one exception: a lone extra slot at the left end reads as a mistake, so it
+takes the middle position instead (`CenterSingleExtraSlot` in `GemArrangement`, a constant).
 
 Every row is shaped by four numbers: `spread` (spacing relative to the authored step), `drop`
 (distance from the skill cell), `curve` (1 follows the authored arc, 0 is a straight row) and
-`rotate` (how much the widgets tilt along it). The bottom row adds `offset` for a sideways
-shift, and `extraRowSpacing` sets the gap between the two rows — measured from the top row, so
-moving that carries the bottom one with it.
+`rotate` (how much the widgets tilt along it). The bottom row adds `bottomOffset` for a sideways
+shift, and `rowGap` sets the gap between the two rows — measured from the top row, so moving that
+carries the bottom one with it. All of them are fields of `GemArrangement.Tuning`.
 
 Which set applies depends on the count:
 
 | Count | Shaped by |
 |---|---|
-| 1, 2, 3 | `SmallShapes[1..3]` — a set each |
-| 4 | the top-row constants |
-| 5, 6, 7 | the top-row constants, plus the bottom-row ones for the extras |
+| 1, 2, 3 | `one*`, `two*`, `three*` — a set each |
+| 4 | the `top*` numbers |
+| 5, 6, 7 | the `top*` numbers, plus the `bottom*` ones for the extras |
 
 Three separate sets for the small counts because the authored layouts have different geometry:
 the same multiplier lands differently on a row of two than on a row of three, and one shared set
@@ -113,8 +137,8 @@ The saved settings live at
 The authored row's original positions and rotations are captured before anything is touched, so
 they can be put back when the count drops. The authored rows are arcs, so the second row follows
 a concentric arc at a smaller or larger radius depending on which way the original bulges; a
-collinear layout falls back to a straight row. Row gap is `extraRowSpacing`, as a multiple of the
-spacing between neighbouring slots.
+collinear layout falls back to a straight row. Row gap is `rowGap`, as a multiple of the spacing
+between neighbouring slots.
 
 Cloning the widget is what fixes both screens at once: the edit-skill overlay
 (`UI_InGame_GemSlot_EditSkill`) is a companion component on the same object, not a second
@@ -246,7 +270,7 @@ The first case works because **the original never moves the widgets inside a con
 activates one. So they can be arranged in place, which is exactly what `GemLayoutPatch` does to the
 HUD, and there is nothing to fight over. Each of those containers is measured on its own, because a
 row authored for two has different geometry from one authored for three; that is the same reason
-`SmallShapes` has a set per count.
+`Tuning` has a set per small count (`one*`, `two*`, `three*`).
 
 The second case cannot work that way. There the original switches all of its layouts off on every
 tick, so a patch that switched one back on would undo that sixty times a second, and each of those
