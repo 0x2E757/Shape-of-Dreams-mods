@@ -67,6 +67,11 @@ Q[0] Gem_R_Frost in St_Q_IncendiaryRounds: DEAD: ... | needs=Damage gate=Cold me
 | `cleargems [slot]` | destroys every essence, or those in one slot |
 | `slots <slot> <count>` | the essence slot count |
 | `verdict [slot]` | AreMyGemsCompatible's verdict for each essence, with the needs, element and memory elements behind it |
+| `tooltip <slot> <index>` / `hide` | opens an essence slot's tooltip as hovering does, and returns its text; closes it |
+| `screenshot [name]` | a PNG of the screen under `<persistentDataPath>/DevTools screenshots/` |
+| `down on\|off` | co-op's knockout as the interface sees it, alone: `isKnockedOut`, game over off, spectating on. See [buildwhiledown.md](buildwhiledown.md#testing-it-alone) |
+| `edit on\|off` | opens or closes the edit-skill screen without its key |
+| `loadout` | knockout, spectating, edit mode, input gates, and every canvas and alpha between the skill buttons and the screen |
 
 Slots are `Q W E R Identity Movement`. The loadout commands are host only, like the panel's.
 

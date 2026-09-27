@@ -3,6 +3,8 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using HarmonyLib;
+using Mirror;
 using UnityEngine;
 
 namespace DevTools
@@ -26,6 +28,9 @@ namespace DevTools
             "tooltip <slot> <index>             open that essence slot's tooltip, as hovering it does, and return its text\n" +
             "hide                               close the tooltip\n" +
             "screenshot [name]                  save a PNG of the screen at the end of this frame; returns its path\n" +
+            "down on|off                        knock the hero out and start spectating as co-op does, without a second player\n" +
+            "edit on|off                        open or close the edit-skill screen, as its key does\n" +
+            "loadout                            what decides whether the edit-skill screen can be seen\n" +
             "slots are Q W E R Identity Movement";
 
         public static string Run(string line)
@@ -45,6 +50,9 @@ namespace DevTools
                 case "tooltip": return Tooltip(words);
                 case "hide": return Hide();
                 case "screenshot": return Screenshot(words);
+                case "down": return Down(words);
+                case "edit": return Edit(words);
+                case "loadout": return Loadout();
                 default: return "unknown command '" + words[0] + "'\n" + Help;
             }
         }
@@ -245,6 +253,102 @@ namespace DevTools
 
             ScreenCapture.CaptureScreenshot(path);
             return path;
+        }
+
+        // Co-op's knockout, as far as the interface can tell, in a game of one. The spectate camera
+        // starts only when another player is standing, so BuildWhileDown's fight with it could not
+        // be seen alone; this sets the two things the interface reads and fires the event it
+        // listens to.
+        //
+        // Only the SyncVar is set, not Se_HeroKnockedOut: no stun, no soul, no shrine. Game over
+        // is switched off while it lasts, since a party of one with nobody standing is otherwise
+        // over in four seconds. 'down off' stands the hero back up, and CameraManager ends the
+        // spectating on its own when it sees that.
+        private static bool _gameOverWas = true;
+
+        private static string Down(string[] words)
+        {
+            if (words.Length < 2) return "down on|off";
+            if (!NetworkServer.active) return "not the server";
+
+            var hero = DevActions.LocalHero;
+            var game = NetworkedManagerBase<GameManager>.instance;
+            var camera = ManagerBase<CameraManager>.instance;
+            if (hero == null || game == null || camera == null) return "not in a run";
+
+            bool on = words[1].Equals("on", StringComparison.OrdinalIgnoreCase);
+            if (on)
+            {
+                if (hero.isKnockedOut) return "already down";
+                _gameOverWas = game.isGameOverEnabled;
+                game.isGameOverEnabled = false;
+                hero.Network_isKnockedOut = true;
+
+                // What CameraManager.LogicUpdateSpectation does when a teammate is standing.
+                AccessTools.PropertySetter(typeof(CameraManager), nameof(CameraManager.isSpectating))
+                    .Invoke(camera, new object[] { true });
+                camera.onIsSpectatingChanged?.Invoke(true);
+            }
+            else
+            {
+                hero.Network_isKnockedOut = false;
+                game.isGameOverEnabled = _gameOverWas;
+            }
+            return "knocked out " + hero.isKnockedOut + ", spectating " + camera.isSpectating +
+                   (on ? "" : " (the camera notices on its next logic update)");
+        }
+
+        // The mode the key would set, without the key - so the gates in front of it are not what
+        // this tests. What happens *after* it opens, which is where a spectating camera closes
+        // it again, is.
+        private static string Edit(string[] words)
+        {
+            var edit = ManagerBase<EditSkillManager>.instance;
+            if (edit == null) return "no edit-skill manager";
+
+            if (words.Length > 1 && words[1].Equals("off", StringComparison.OrdinalIgnoreCase)) edit.EndEdit();
+            else edit.StartRegularEdit(endAfterAction: false);
+            return "mode " + edit.mode;
+        }
+
+        private static string Loadout()
+        {
+            var text = new StringBuilder();
+            var hero = DevActions.LocalHero;
+            var camera = ManagerBase<CameraManager>.instance;
+            var control = ManagerBase<ControlManager>.instance;
+            var edit = ManagerBase<EditSkillManager>.instance;
+
+            text.Append("knocked out ").Append(hero != null && hero.isKnockedOut)
+                .Append(", spectating ").Append(camera != null && camera.isSpectating)
+                .Append(", edit mode ").Append(edit != null ? edit.mode.ToString() : "-");
+            if (control != null)
+                text.Append("\ninput ").Append(control.shouldProcessCharacterInput)
+                    .Append(", input allowing knocked out ").Append(control.shouldProcessCharacterInputAllowKnockedOut);
+
+            // Everything between the buttons and the screen that can hide them.
+            var buttons = UnityEngine.Object.FindAnyObjectByType<UI_InGame_SkillButtons>(FindObjectsInactive.Include);
+            if (buttons == null) return text.Append("\nno skill buttons").ToString();
+
+            for (var node = buttons.transform; node != null; node = node.parent)
+            {
+                var line = new StringBuilder();
+                if (!node.gameObject.activeSelf) line.Append(" inactive");
+                if (node.TryGetComponent<Canvas>(out var canvas)) line.Append(" canvas ").Append(canvas.enabled ? "on" : "OFF");
+                if (node.TryGetComponent<CanvasGroup>(out var group)) line.Append(" alpha ").Append(group.alpha.ToString("0.##"));
+                if (node.TryGetComponent<UI_InGame_VisibilityOnSpectate>(out var vis)) line.Append(" hideOnSpectate ").Append(vis.hideOnSpectate);
+                if (line.Length > 0) text.Append('\n').Append(node.name).Append(':').Append(line);
+            }
+
+            var bar = UnityEngine.Object.FindAnyObjectByType<UI_InGame_SkillButtonsBottomBar>(FindObjectsInactive.Include);
+            if (bar != null && bar.TryGetComponent<CanvasGroup>(out var barGroup))
+                text.Append("\nbottom bar ").Append(bar.name).Append(" alpha ").Append(barGroup.alpha.ToString("0.##"));
+
+            // Hidden on spectate anywhere, in case one sits over the bar from a sibling.
+            foreach (var vis in UnityEngine.Object.FindObjectsByType<UI_InGame_VisibilityOnSpectate>(FindObjectsSortMode.None))
+                if (vis.hideOnSpectate) text.Append("\nhidden on spectate: ").Append(vis.name);
+
+            return text.ToString();
         }
 
         // Found at call time rather than cached: the other mod can be reloaded underneath this one.
