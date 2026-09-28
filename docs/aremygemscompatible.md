@@ -517,8 +517,9 @@ descriptions say "when this Memory deals Cold damage", and most memories deal da
 
 The five cases the change was built for — Frost in Incendiary Rounds and in Ice Claw, beside
 Inversion and beside Sulfur, and Fever beside Charcoal in a memory with no element — were set up and
-read back through DevTools' command server ([devtools.md](devtools.md)), tooltip and slot mark
-included.
+read back, tooltip and slot mark included, through the command server DevTools had at the time.
+Its `verdict` command was a reflection call to `Verdict.Describe`, which is still there for
+`/reflect/call` ([devtools.md](devtools.md)).
 
 ## Where the warning appears
 
@@ -563,9 +564,10 @@ a mark left hanging over an empty frame reads as a warning about nothing.
 ## How the mark is dressed
 
 Every number below lives in `BadgeAppearance` as a `const`, and every one of them was arrived at by
-nudging it on screen through a DevTools section that has since been taken out again. **What the mod
-was developed with, and no longer ships** in [devtools.md](devtools.md) records how that worked,
-and is what to read before rebuilding it after the artwork changes.
+nudging it on screen through a DevTools section that has since been taken out again. It was a
+`-`/`+` pair per float of a tuning object found by reflection, with a button that logged the set
+as C# to paste back. That panel is in git history, before DevTools was rewritten. Today
+`/reflect/set` reaches the same fields, once they are fields again rather than `const`.
 
 **The essence's icon is faded to a quarter while it is marked.** The mark says *that* something is
 wrong; the fade says which essence is not pulling its weight, and reads at a glance across a full

@@ -238,7 +238,8 @@ lands proportionally on a scoreboard entry a fraction of the size. That property
 Proportionally, though, is not identically, which is why there are two `Tuning` objects and not
 one: `Hud` and `Summary`, the same class with four of its twenty-one numbers changed — `rowGap`,
 `topSpread`, `bottomSpread` and `bottomCurve`. Those four were dialled in on the Tab screen with
-the DevTools panel until it read like the HUD beside it. The other seventeen are shared, which is
+the old DevTools panel until it read like the HUD beside it. That panel is gone; `/reflect/set` on
+`MoreGemSlots.GemArrangement.Summary.<field>` reaches the same numbers. The other seventeen are shared, which is
 what stops the screens drifting apart when one of them is next adjusted.
 
 `GemArrangement` knows nothing about gem slots. It takes the transforms of a row the game

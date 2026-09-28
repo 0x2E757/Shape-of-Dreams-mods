@@ -103,19 +103,24 @@ patching, the mod answers and brings back what it keeps visible.
 ## Testing it alone
 
 The spectate camera starts only when another player is standing, so none of this can be seen in a
-game of one. DevTools' command server (Debug builds) stands in for the part that needs a teammate:
+game of one. It was tested with DevTools standing in for the part that needs a teammate. That was
+five commands of the old line-based server: `down on`, `edit on`, `down spectate`, `loadout` and
+`down off`. They went with the DevTools rewrite ([devtools.md](devtools.md)). The same steps
+through today's `/reflect` routes:
 
 ```
-devcmd down on        # game over off, then a real Kill - Se_HeroKnockedOut, stun, soul and all
-devcmd edit on        # StartRegularEdit, bypassing the key's gates - it tests what happens after
-devcmd down spectate  # the camera to the nearest other entity, isSpectating, onIsSpectatingChanged
-devcmd loadout        # knockout, spectating, edit mode, input gates, hidden canvases and groups
-devcmd down off       # Se_HeroKnockedOut.Revive; the camera ends spectating on its next update
+reflect/set  GameManager.instance.isGameOverEnabled = false   then  cheat/kill hero=true
+reflect/call EditSkillManager.instance.StartRegularEdit [false]
+reflect/call CameraManager.instance.SetFocusedEntity ["#<a monster's id>"]
+reflect/set  CameraManager.instance.isSpectating = true
+reflect/call CameraManager.instance.onIsSpectatingChanged.Invoke [true]
 ```
 
-The one thing it cannot be is a teammate: the camera goes to a prop or a monster instead. It is
-close enough that the Release build passed it — and so did a real co-op run afterwards, recorded by
-polling `loadout` twice a second.
+The old `down off` was `Se_HeroKnockedOut.Revive`, reached from `$hero.Status.statusEffects`.
+
+The one thing this cannot be is a teammate: the camera goes to a prop or a monster instead. It was
+close enough that the Release build passed it. A real co-op run afterwards passed as well; that
+run was recorded by polling the old `loadout` command twice a second.
 
 **A mod reload while spectating emptied the bar.** Deleting a folder from the mod directory mid-run
 made the loader's file watcher reload every mod: the old copy unloaded, `Repaint` handed visibility

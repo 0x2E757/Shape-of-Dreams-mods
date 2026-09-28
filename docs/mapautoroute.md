@@ -217,8 +217,11 @@ along the route stay. And `from` needs no relation to `to`: `TravelToNode` has n
 of its own, which is exactly how the game's own sidetrack return reaches a node nowhere near.
 
 **A save damaged by the old behaviour is not repaired by the fix** — the wrong room is already
-filed. `DevTools` grew a *Forget that node's room* button for it, which clears one node's entry so
-that the room is built afresh instead of restored ([devtools.md](devtools.md)).
+filed. `DevTools` grew a *Forget that node's room* button for it, which cleared one node's entry
+so that the room is built afresh instead of restored. The button went with the DevTools rewrite.
+The same repair is now `/reflect/set ZoneManager.instance.visitedNodesSaveData[N] = null`, from
+anywhere but node N itself, because the room the party stands in is written out again when they
+leave ([devtools.md](devtools.md)).
 
 ## A hunter in the way stops the route
 

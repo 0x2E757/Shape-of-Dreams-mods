@@ -12,7 +12,7 @@ Mods for Shape of Dreams `r.1.3.1.3_s`, built against the game's own assemblies.
 | `CloserSouls` | yes | A knocked-out player's soul is left closer — by default the first death of a region right where it happened. |
 | `BuildWhileDown` | yes | Memories and essences can be rearranged while knocked out, not only while alive. |
 | `AreMyGemsCompatible` | yes | Marks an essence that can never fire in the memory it is socketed into — one waiting for damage in a memory that deals none, or for healing in a memory that never heals. |
-| `DevTools` | no | An overlay for testing the others: hero level, god mode, spawning memories and essences, ending a run, and live tuning of the slot arrangement. |
+| `DevTools` | no | The testing tool for the others: a picker for spawning or equipping any essence or memory, and (Debug builds) an HTTP API through which an agent can drive the whole game. Runs played with it loaded earn no progression. |
 
 *Workshop* is whether a mod is meant to go up at all, not whether it is up today — the column is
 the list in `publish.ps1`, and a version that has shipped is a question for that mod's
@@ -99,7 +99,7 @@ matching code.
 | [closersouls.md](docs/closersouls.md) | Where a soul is placed, the node the search cannot return, and adding a room modifier to a live room |
 | [buildwhiledown.md](docs/buildwhiledown.md) | The four refusals between a downed player and their loadout, why transpilers rather than a gate, and the drops that stay shut |
 | [aremygemscompatible.md](docs/aremygemscompatible.md) | What an essence waits for and how it is read from IL, why the memory side comes from the game's English data dump, and the word boundaries that decide it |
-| [devtools.md](docs/devtools.md) | The testing overlay, god mode, and the live tuning panel for the slot arrangement |
+| [devtools.md](docs/devtools.md) | The picker, the agent API and its reference, and why test runs earn nothing |
 | [game-ui.md](docs/game-ui.md) | Reusable ground: shared widgets, localization, the mod config window |
 | [multiplayer.md](docs/multiplayer.md) | How the published mods behave in co-op, and who needs to install what |
 | [planned.md](docs/planned.md) | The three mods that are named but not built: where each one hooks, and what the game already does |
