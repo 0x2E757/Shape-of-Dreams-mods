@@ -115,6 +115,36 @@ namespace DevTools
             return new { killed = target.GetType().Name };
         }
 
+        [Route("POST", "/cheat/monster", "Spawn monsters around the hero (or at x,z) the way a room does: owned by the creep player, at the zone's level. health adds flat Maximum Health, for a target that has to outlast a test. Host only.",
+               "type=Mon_Forest_Hound, count=1, distance=4, x?, z?, level?, health=0")]
+        private static object Monster(Args a)
+        {
+            GameAccess.RequireServer();
+            var hero = GameAccess.RequireLiveHero();
+            string type = a.Str("type", "Mon_Forest_Hound");
+            var prefab = DewResources.GetByShortTypeName(type) as Entity ?? throw new DevException("no entity prefab named " + type);
+            int count = Mathf.Clamp(a.Int("count", 1), 1, 20);
+            float distance = a.Float("distance", 4f);
+            var center = a.Point() ?? hero.agentPosition;
+            int level = a.Int("level", NetworkedManagerBase<GameManager>.instance.ambientLevel);
+            float health = a.Float("health", 0f);
+
+            var spawned = new System.Collections.Generic.List<object>();
+            for (int i = 0; i < count; i++)
+            {
+                float angle = (i + 0.5f) * Mathf.PI * 2f / count;
+                var at = Dew.GetValidAgentDestination_Closest(center, center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * distance);
+                var entity = Dew.SpawnEntity(prefab, at, Quaternion.identity, NetworkedManagerBase<ActorManager>.instance.serverActor, DewPlayer.creep, level);
+                if (health > 0f)
+                {
+                    entity.Status.AddStatBonus(new StatBonus { maxHealthFlat = health });
+                    entity.Status.SetHealth(entity.maxHealth);
+                }
+                spawned.Add(new { id = entity.netId, type = entity.GetType().Name, hp = entity.maxHealth, position = Describe.Vec(entity.position) });
+            }
+            return new { spawned };
+        }
+
         [Route("POST", "/cheat/teleport", "Put the hero at a point.", "x, z")]
         private static object Teleport(Args a)
         {

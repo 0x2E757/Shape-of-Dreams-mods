@@ -144,7 +144,8 @@ Conventions:
 | Any screen | `GET /ui`, `/ui/texts`, `POST /ui/click`, `/ui/set_text` | Menus nobody wrote a route for |
 | Raw input | `GET /input`, `POST /input/key`, `/input/mouse`, `/input/release` | Keys and the cursor, as a player would press them |
 | Looking | `POST /screenshot`, `GET /log` | A PNG path to look at; the Unity log since line N |
-| The catalogue and cheats | `GET /content/essences`, `/content/memories`, `/content/heroes`, `POST /cheat/spawn`, `level`, `currency`, `heal`, `kill`, `teleport`, `sockets`, `travel`, `next_zone`, `time_scale` | The picker's catalogue, and everything a player could not do |
+| The catalogue and cheats | `GET /content/essences`, `/content/memories`, `/content/heroes`, `POST /cheat/spawn`, `monster`, `level`, `currency`, `heal`, `kill`, `teleport`, `sockets`, `travel`, `next_zone`, `time_scale` | The picker's catalogue, and everything a player could not do. `/cheat/monster` spawns monsters the way a room does (the creep player, the zone's level), with extra Maximum Health on request, for a target that has to outlast a test; `EntityAI.DisableAI`, a static the game has, set through `/reflect/set`, stands them still |
+| What essences really do | `POST /debug/essences/start`, `GET /debug/essences/watch`, `POST /debug/essences/unwatch` | Listens to every essence and memory the hero wears and counts what each actually did since the start: its `Gem.NotifyUse` calls, and everything done by it or by what it created (hits by element, heals, barriers, kills, instances). A memory's counts are split between itself and each essence in it. See **Watching essences** below |
 | Everything else | `GET /reflect/get`, `/reflect/members`, `/reflect/types`, `/reflect/find`, `/handle`, `POST /reflect/set`, `/reflect/call`, `/console` | Any field, property or method in the process, and the game's own debug console |
 | Mods | `GET /mods`, `POST /mods/reload` | See below |
 
@@ -205,6 +206,19 @@ player. So:
   `InGameUIManager.ShowCenterMessageRaw` and returned as `refused`.
 - **Game speed, travel without the rift, and moving to the next zone without it** are
   `/cheat/time_scale`, `/cheat/travel` and `/cheat/next_zone`.
+
+### Watching essences
+
+AreMyGemsCompatible answers whether an essence can fire in a memory by reading code. `/debug/essences` answers it by watching, and is what that mod's verdicts were checked against.
+
+Two signals per essence, both the game's own:
+
+- **`Gem.NotifyUse`**, how an essence says it has just acted: the flash on its socket, and a use off its rate limit. 86 of the 105 essence types call it. It is not always the effect, though. Lava, Finality, Talc, Shatter, Responsibility, Pure White, the Celestial, Heart of Gold and Last Starlight call it on the cast that arms them, before the condition that pays out, so for them it means "armed".
+- **The essence's own actor events.** `Actor.InvokeOnDealDamage` and its siblings walk up `parentActor`, so a handler on the essence sees everything done by it and by what it created: projectiles, zones, status effects.
+
+What an essence creates *through the cast* (`Create*WithSource(info.instance)`) is parented under the cast rather than the essence, so the essence's own counts never see it. The memory's counts put it down to the essence all the same, under `byEssence`, because such an instance names its essence in `AbilityInstance.Network_gem` (`Ai_R_Lava_LavaField`, Sharp's arrows, Scorched's fireballs). Copies of one kind in one memory share that entry. The memory's counts also give the element of every hit it dealt, which settles "does this memory deal Cold" by observation.
+
+The route only listens. Nothing is patched but a postfix on `Gem.NotifyUse`, which no other mod here touches.
 
 ### How casting works
 
@@ -301,6 +315,13 @@ short type name resolves to the last assembly that defines it, which is the live
   `DewMod`'s auto-reload `CheckRoutine`). `POST /mods/reload` does the same reload on request. It
   unloads this mod as well, so it answers first and reloads a moment later, from a coroutine the
   game owns.
+- **A reload with the window in the background used to kill the keyboard for the session.** The
+  server sets the Input System's `backgroundBehavior` to `IgnoreFocus` and the unloading copy puts
+  the old behaviour back - at which moment, unfocused, the Input System disables every device that
+  does not run in the background. The new copy's `IgnoreFocus` then means nothing ever turns them
+  back on; the mouse kept working only because the game reads it through legacy `Input`. The server
+  now re-enables any disabled device right after setting `IgnoreFocus` - the game never disables one
+  itself.
 - **Unity's own objects are written by name only.** Reading their properties blind is not safe:
   `Renderer.material` copies the material on every read. `GameObject` and `Transform` get a short
   summary. The game's own types are written in full.

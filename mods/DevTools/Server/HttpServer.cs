@@ -90,6 +90,16 @@ namespace DevTools
             {
                 _previousBackground = InputSystem.settings.backgroundBehavior;
                 InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+
+                // A reload while the window is in the background leaves the keyboard dead: the
+                // previous copy's OnDisable put the old behaviour back, and the Input System
+                // disabled every device that does not run in the background on the spot. Under
+                // IgnoreFocus nothing turns them on again when focus returns, so the keys stop
+                // working for the rest of the session - the mouse does not, since the game reads
+                // it through legacy Input. The game never disables a device itself, so anything
+                // disabled now was disabled for the background and is turned back on.
+                foreach (var device in InputSystem.devices)
+                    if (!device.enabled) InputSystem.EnableDevice(device);
             }
             catch (Exception e)
             {

@@ -42,7 +42,9 @@ namespace DevTools
 
         // An essence at a quality, on the ground or into a socket. With no index, the first empty
         // socket of the slot, or the last one when all are full. The game will not have one hero
-        // wear two essences of a type, so one already worn elsewhere is taken off first.
+        // wear two essences of a type, so one already worn elsewhere is taken off first - asked
+        // through TryGetEquippedGemOfSameType, the game's own check, so that a mod lifting that
+        // rule (ControlledMerge) keeps the one worn elsewhere.
         public static Gem SpawnEssence(string typeName, int quality, HeroSkillLocation? slot, int? index = null,
                                        bool destroyReplaced = false, Vector3? at = null)
         {
@@ -67,10 +69,11 @@ namespace DevTools
                 if (socket >= max) throw new DevException(slot.Value + " has " + max + " sockets");
                 location = new GemLocation(slot.Value, socket);
 
+                bool oneOfEach = skills.TryGetEquippedGemOfSameType(entry.type, out _, out _);
                 foreach (var pair in skills.gems.ToList())
                 {
                     if (pair.Value == null) continue;
-                    if (!pair.Key.Equals(location) && pair.Value.GetType() != entry.type) continue;
+                    if (!pair.Key.Equals(location) && !(oneOfEach && pair.Value.GetType() == entry.type)) continue;
                     var removed = skills.UnequipGem(pair.Key, hero.agentPosition);
                     if (destroyReplaced && removed != null) removed.Destroy();
                 }
