@@ -1,6 +1,6 @@
 # Multiplayer
 
-All eight published mods work in co-op, and are built along the boundary the game already draws.
+All nine published mods work in co-op, and are built along the boundary the game already draws.
 
 Nothing gates a modded session. `DewMod.isGameplayAltered` feeds exactly one thing — a lobby
 attribute named `isModded` — so a lobby is *labelled* as modded, not closed. The authors' code of
@@ -63,9 +63,9 @@ they would see them, which is the choice the game's own toned-down check makes.
 **CloserSouls is host-only in both directions.** `Se_HeroKnockedOut.CheckAndAddHeroSoul` runs behind
 `isServer` and writes into `ZoneManager.nodes`, a SyncVar list, so a guest running it is patching a
 method its own machine never calls. One installed copy changes the run for the whole party; a party
-whose host does not have it plays the stock game however many other people do. It is the only one of
-the eight where installing it changes somebody else's game, which is why its description says so in
-the first line about co-op rather than the last.
+whose host does not have it plays the stock game however many other people do. It and ControlledMerge are the
+two of the nine where installing it changes somebody else's game, which is why their descriptions say
+so in the first line about co-op rather than the last.
 
 **BuildWhileDown asks the server for nothing new.** The gates it opens are all client-side — an
 early return, a faded canvas group, two input triggers — and the commands it lets through are the
@@ -90,7 +90,7 @@ empty world and conclude every essence was dead. Reasoning about the game's ship
 only approach that gives a guest the same answer as a host, which it does, because both are reading
 the same file.
 
-**ControlledMerge, not published yet, is the host's.** Picking an essence up (`Gem.OnInteract`'s
+**ControlledMerge is the host's.** Picking an essence up (`Gem.OnInteract`'s
 server branch), equipping one (`EquipGem`, behind `CmdEquipGem_Internal`) and every number an
 essence produces are decided on the server, so a party whose host has it plays by it and a guest's
 copy changes only its own tooltips. Merging calls `HeroSkill.MergeGem`, which is `[Server]` with no
@@ -109,8 +109,8 @@ slot ceiling** in [moregemslots.md](moregemslots.md). AutoCast is not required o
 whoever has it. Neither is FaceTheCursor, and for the strongest reason: what it
 changes is already replicated, and it changes nothing about anyone else. TransparentEffects,
 BuildWhileDown and AreMyGemsCompatible are the same shape — one player, one screen, nothing sent.
-CloserSouls is the opposite, and the only one of its kind here: it does nothing at all on a guest,
-and everything on a host.
+CloserSouls is the opposite: it does nothing at all on a guest, and everything on a host.
+ControlledMerge is nearly so — a guest's copy only draws its own tooltips, by the host's settings.
 
 Most of the above is read off the code and the game's API rather than watched happening. Several
 pieces only exercise in a live two-client session, and one whole mod does: **CloserSouls cannot be

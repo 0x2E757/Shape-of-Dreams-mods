@@ -83,7 +83,7 @@ together.
 | `x.Y` | anything a player would notice: new behaviour, a new setting, a fix |
 | `X.0` | the mod does something materially different from what its description promised |
 
-Numbers are per mod. The two published mods are released independently and their versions have no
+Numbers are per mod. The published mods are released independently and their versions have no
 relation to each other.
 
 ## Releasing

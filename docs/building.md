@@ -108,6 +108,11 @@ per language, but only through the item's page — the uploader sets just the on
 for pasting there live in `<mod>/workshop/`, deliberately outside `about/` so they are not
 uploaded as content nobody reads.
 
+**A description is at most 8000 bytes of UTF-8, not 8000 characters.** Past it Steam's page refuses
+to save with only *There was a problem trying to save the title and description.* Cyrillic takes two
+bytes a character and Chinese three, so a Russian text half the English one's length in characters
+can be over: ControlledMerge's was 4901 characters and 8534 bytes. Measure the bytes before pasting.
+
 `DewMod.ConvertBBToRichText` is what the game does with the markup, and it is worth knowing
 before writing any: `[url=address]text[/url]` keeps **only the text**, dropping the address, so a
 link written that way reads as a bare word in the manager. `[url]address[/url]` keeps the address,

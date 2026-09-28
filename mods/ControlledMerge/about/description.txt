@@ -1,5 +1,8 @@
 Picking up an essence you already have no longer merges it into the one you have. It goes to your hand, and you choose a slot for it the way you would for any new essence - so the same essence can be worn in several memories, or twice in one.
 
+[b]Strongly recommended alongside it: Are My Gems Compatible.[/b] It marks an essence that can never fire in the memory it is in - and with it loaded, such a copy (a second Essence of Lava in a memory that deals no Fire damage, say) does not count and weakens none of the copies that work.
+[url]https://steamcommunity.com/sharedfiles/filedetails/?id=3794045595[/url]
+
 [h2]Merging, when you want it[/h2]
 With the new essence in hand, choose the slot of the one you already have and the two merge, as picking it up used to do. Its tooltip says so before you click, with the quality it will end up at. Choose an empty slot instead and you keep both. Two copies you already wear merge by dragging one onto the other in the edit screen.
 
@@ -13,27 +16,11 @@ The two multiply: two copies in Q and one in W leave each copy in Q at 52.5% and
 
 The essence's tooltip shows the numbers it really has where it is - or where you are dragging it - and a line under them says how much it has been weakened and why.
 
-With [b]AreMyGemsCompatible[/b] loaded, a copy that can never fire in its memory - a second Essence of Lava in a memory that deals no Fire damage - does not count, and does not weaken the copies that work.
-
 [h2]Copies add up[/h2]
 Two copies do what two essences would. Where the game keeps one thing per hero - a buff on you, a mark on an enemy, a cooldown per enemy - each copy keeps its own, and taking one copy off takes only what is its own.
 
-[h2]Essence by essence[/h2]
-[list]
-[*][b]Where two values multiply into one effect, one of them stays whole[/b], so the copy loses its share once, not twice: the number of fireballs of Essence of Scorch, of blades of Essence of the Blade and of enemies hit by Essence of Insight, the charge cap of Essence of Thunder, how often Essence of the Vortex fires, the radius of Essence of Freezing and Essence of Stillness, the ricochet chance of Essence of Ricochet. Their damage is cut instead. Essence of Snow keeps its snowball damage and has its barrier cut: its snowballs come faster the larger the barrier
-[*][b]Counts on their own are cut and rounded:[/b] the stack cap of Divine Faith, the casts per room of Apple of Discord, the charges Essence of Virtue gives - rounded down, never below one
-[*][b]A step and its cap are both cut[/b] - Essence of the Crucible, Essence of the Starry Sky, Essence of Finality: it takes as many stacks as ever to reach a lower cap
-[*][b]Buffs on you are one per copy[/b] - Essence of Wind, Essence of Voracity, Essence of Liberty, Essence of Composure and the like: two copies give two buffs, and casting a memory with a copy no longer replaces the buff of a copy in another
-[*][b]Empowered attacks are one per copy[/b] - Essence of Obsidian, Essence of the Void, Essence of Dusk - and your next attack spends them all
-[*][b]Per-enemy cooldowns are per copy[/b] - Essence of Frost, Essence of the Blade
-[*][b]Marks are one per copy[/b] - Essence of the Wound, the living bomb of Essence of Fever, the buff Essence of Love gives an ally
-[*][b]Stacks that are consumed are counted by every copy acting on them at once[/b] - the Darkness Essence of Twilight consumes, the elements Essence of Purity clears
-[*][b]Amplifiers in one memory each amplify the same hit[/b] - Essence of Lethality, Essence of Guidance and the rest
-[*][b]Apple of Discord:[/b] two in one memory turn it once, with the casts per room of both
-[*][b]Supersymmetry:[/b] each copy's barrier is its share of your real Maximum Health, and taking the copies off gives back the Health you had
-[*][b]Glacial Core and Essence of Glass have both values cut:[/b] the second one works on every heal, not only their own
-[*][b]Left shared:[/b] the Maximum Health Essence of Frost grants and the stats from the pickups of Essence of Predation and Essence of Culinary - every copy adds to one total; the critical fourth attack of Essence of Fangs, one strike however many copies, each of which still fires its fangs
-[/list]
-
 [h2]In co-op[/h2]
 [b]The host decides.[/b] Picking up, equipping and every number an essence produces are the host's, so a party plays by the host's copy of the mod and its settings. Merging - by choosing a slot or by dragging - works for everyone in the party, guests without the mod included. A guest with the mod sees the host's settings in its tooltips, not its own.
+
+[h2]Source code[/h2]
+[url]https://github.com/0x2E757/Shape-of-Dreams-mods[/url]

@@ -12,7 +12,7 @@ Mods for Shape of Dreams `r.1.3.1.3_s`, built against the game's own assemblies.
 | `CloserSouls` | yes | A knocked-out player's soul is left closer — by default the first death of a region right where it happened. |
 | `BuildWhileDown` | yes | Memories and essences can be rearranged while knocked out, not only while alive. |
 | `AreMyGemsCompatible` | yes | Marks an essence that can never fire in the memory it is socketed into — one waiting for damage in a memory that deals none, or for healing in a memory that never heals. |
-| `ControlledMerge` | not yet | Picking up an essence you already wear no longer merges it: you choose a slot for it, so the same essence can be worn in several memories or twice in one, each copy weaker for it. Choosing the slot of the one you have still merges them. |
+| `ControlledMerge` | yes | Picking up an essence you already wear no longer merges it: you choose a slot for it, so the same essence can be worn in several memories or twice in one, each copy weaker for it. Choosing the slot of the one you have still merges them. |
 | `DevTools` | no | The testing tool for the others: a picker for spawning or equipping any essence or memory, and (Debug builds) an HTTP API through which an agent can drive the whole game. Runs played with it loaded earn no progression. |
 
 *Workshop* is whether a mod is meant to go up at all, not whether it is up today — the column is
@@ -37,7 +37,7 @@ points, and says plainly which one has none yet.
 ```powershell
 .\tools\build.ps1     # Debug; -Configuration Release for the other
 .\tools\launch.ps1    # runs the game with -moddir pointed at mods\
-.\tools\publish.ps1   # stages the eight published mods into dist\
+.\tools\publish.ps1   # stages the nine published mods into dist\
 ```
 
 Then enable the mods in the in-game mod manager. The player log is at
@@ -69,7 +69,7 @@ mods/                what -moddir points at
   CloserSouls/       workshop
   BuildWhileDown/    workshop
   AreMyGemsCompatible/  workshop
-  ControlledMerge/   not published yet
+  ControlledMerge/   workshop
   DevTools/          local only; the testing tool for the others
   Shared/            compiled into each mod, not shipped as a library
 tools/               build, launch, publish, the art scripts, and one verification script
