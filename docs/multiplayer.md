@@ -90,6 +90,18 @@ empty world and conclude every essence was dead. Reasoning about the game's ship
 only approach that gives a guest the same answer as a host, which it does, because both are reading
 the same file.
 
+**ControlledMerge, not published yet, is the host's.** Picking an essence up (`Gem.OnInteract`'s
+server branch), equipping one (`EquipGem`, behind `CmdEquipGem_Internal`) and every number an
+essence produces are decided on the server, so a party whose host has it plays by it and a guest's
+copy changes only its own tooltips. Merging calls `HeroSkill.MergeGem`, which is `[Server]` with no
+command in front of it, so it is taken from the commands a click and a drag already send: a guest's
+unequip and swap reach the host's server like anyone's, and a guest merges as the host does, with
+or without the mod. The first version merged on the clicking machine, which left guests unable to
+merge at all. A guest's copy draws its tooltips by the host's settings, sent in `GameSettingsManager.customData`,
+a dictionary the game already syncs for game modes' own settings, so nothing new is sent; and with
+AreMyGemsCompatible beside it, it is the host's copy of that mod that decides whether dead copies
+count. See [controlledmerge.md](controlledmerge.md).
+
 **Who needs to install what.** MoreGemSlots is required on both sides: the host decides the slot
 counts, but *drawing* them is a local UI patch, and without it a guest's interface cannot render
 more than three — the same failure as the "slots vanish at 5+" bug in **Getting past the essence

@@ -110,3 +110,18 @@ run.** Measuring immediately after building returns the preferred size, which is
 set correctly, measure correctly, and still look unchanged on screen. Two of the four causes above
 were only found once a real on-screen number was in hand.
 
+## Two mods on one method
+
+**After the mods have been reloaded in a session, a method patched by two of them keeps only the
+later one working.** Harmony 2.3.6 stores each patch as its module's MVID and the method's token and
+finds the method again with `AppDomain.GetAssemblies()...First(m => m.ModuleVersionId == moduleGUID)`
+(`HarmonyLib.Patch.PatchMethod`). `DewMod` loads a mod's assembly from its bytes on every reload -
+the in-game mod manager's toggles, `/mods/reload`, the auto-reload after a rebuild - and every copy
+has the same MVID. When a second mod patches a method the first already patched, Harmony rebuilds
+the first one's patch from that record and binds it to the *oldest* copy, whose statics
+(`Live` and the like) were cleared when it unloaded. The patch still runs, and does nothing.
+
+It was found as AreMyGemsCompatible's tooltip warning vanishing once ControlledMerge also patched
+`UI_Tooltip_GemDescription.OnSetup`; a fresh start of the game hides it, since every assembly is
+then loaded once. The rule that follows: **two mods here do not patch the same method.** At the time
+of writing none do - ControlledMerge hooks `DoInGameTooltip`, which `OnSetup` calls, instead.
