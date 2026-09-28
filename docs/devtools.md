@@ -176,7 +176,8 @@ DEVBOT_TRACE=boss.log node tools/devbot.mjs auto      # plus a per-tick log of b
 In each room it fights, loots and moves on. For loot it takes items, uses reward shrines, shops at
 merchants, breaks deposits and upgrades at wells. Then it walks to the exit and picks the next room
 on the world map, on the way to the boss. It uses the boss's soul, goes through the rift into the
-next zone, and stops after the third zone's boss or when the hero dies. In a fight it circles its
+next zone, through the whole cycle to Primus, the final boss, and stops at the ending or when the
+hero dies. It has won that run: about 20 minutes from the first room to Primus down. In a fight it circles its
 target at shooting range, sideways, rather than backing away. Going round the other way gets it off
 a wall. It steps off the line of incoming projectiles and out of the telegraphs, and dashes when
 walking would not be quick enough. It shoots all the while. Bosses with chasing orbs and delayed
