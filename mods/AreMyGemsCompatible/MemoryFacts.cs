@@ -63,7 +63,13 @@ namespace AreMyGemsCompatible
 
         // Damage is the easy one: a memory that deals any says so, and the scaling variable behind
         // the number is named for it. dmg matches dmgFactor, which is the game's usual spelling.
-        private static readonly Regex DamageProse = new Regex(@"\bdamage\b", RegexOptions.IgnoreCase);
+        //
+        // Except where damage is a stat or is suffered: "gain {2} Attack Damage" is the whole of
+        // what Hero's Return says about damage, and it deals none - in a fight, an on-hit essence
+        // in it never fired. Over the shipped dump this changes Hero's Return and The Killing Flow
+        // and nothing else.
+        private static readonly Regex DamageProse = new Regex(
+            @"(?<!\battack\s)(?<!\bability\s)\bdamage\b(?!\s+(taken|you take|reduction))", RegexOptions.IgnoreCase);
         private static readonly Regex DamageVar = new Regex(@"dmg|damage", RegexOptions.IgnoreCase);
 
         // Healing is the one worth being careful about, and both directions cost something. The

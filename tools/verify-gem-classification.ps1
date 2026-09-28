@@ -204,6 +204,37 @@ function Get-MemberNames($method, $follow) {
     return $names
 }
 
+# SkillMemberNames, restated: what an OnEquipSkill touches, less the essence's own business - its
+# fields, its property accessors, the base call, the network guards, SyncVar setters' plumbing and
+# anything being constructed. Those come back as $null, so a body of nothing else touches nothing.
+$networkFlags = @('get_isServer', 'get_isClient', 'get_isValid', 'get_isActive', 'GeneratedSyncVarSetter')
+function Test-GemDeclared($type) { return ($null -ne $type -and $gemBase.IsAssignableFrom($type)) }
+function Get-SkillNames($method, $follow) {
+    $names = New-Object System.Collections.ArrayList
+    try { $body = $readBody.Invoke($null, @([System.Reflection.MethodBase]$method)) }
+    catch { [void]$names.Add('<<unreadable>>'); return ,$names }
+    foreach ($pair in $body) {
+        $operand = $pair.Value
+        if ($operand -is [System.Reflection.FieldInfo]) {
+            if (Test-GemDeclared $operand.DeclaringType) { [void]$names.Add($null); continue }
+            [void]$names.Add($operand.Name)
+            if ($null -ne $operand.DeclaringType) { [void]$names.Add($operand.DeclaringType.Name + '.' + $operand.Name) }
+            continue
+        }
+        if ($operand -isnot [System.Reflection.MethodBase]) { continue }
+        $accessor = $operand.Name.StartsWith('get_', 'Ordinal') -or $operand.Name.StartsWith('set_', 'Ordinal')
+        $own = ((Test-GemDeclared $operand.DeclaringType) -and ($accessor -or $operand.Name -eq $method.Name)) -or
+               ($networkFlags -contains $operand.Name) -or ($operand -is [System.Reflection.ConstructorInfo])
+        if ($own) { [void]$names.Add($null) } else { [void]$names.Add($operand.Name) }
+        if (-not $follow) { continue }
+        if ($null -eq $operand.DeclaringType) { continue }
+        if (-not $gemBase.IsAssignableFrom($operand.DeclaringType)) { continue }
+        if ($operand.DeclaringType -eq $gemBase -or $operand -eq $method) { continue }
+        foreach ($x in (Get-SkillNames $operand $false)) { [void]$names.Add($x) }
+    }
+    return ,$names
+}
+
 # ElementGates, restated: the essences whose whole effect in the slot waits for one element.
 $elementGates = @{
     'Gem_R_Frost'  = 'Cold'
@@ -215,23 +246,28 @@ $elementGates = @{
 $essences = foreach ($gem in ($types | Where-Object { $_ -ne $gemBase -and $gemBase.IsAssignableFrom($_) } | Sort-Object FullName)) {
     $needs = New-Object System.Collections.Generic.HashSet[string]
     $alwaysLive = $false
+    $castHandler = $false
+    $castFromEquip = $false
     $t = $gem
     while ($null -ne $t -and $t -ne $gemBase) {
         foreach ($m in $t.GetMethods($declared)) {
             switch ($m.Name) {
                 'OnDealDamage' { [void]$needs.Add('Damage') }
                 'OnDoHeal'     { [void]$needs.Add('Heal') }
-                'OnCastComplete'              { [void]$needs.Add('Cast') }
-                'OnCastCompleteBeforePrepare' { [void]$needs.Add('Cast') }
+                'OnCastComplete'              { [void]$needs.Add('Cast'); $castHandler = $true }
+                'OnCastCompleteBeforePrepare' { [void]$needs.Add('Cast'); $castHandler = $true }
                 'OnEquipSkill' {
                     $recognised = $false
-                    foreach ($n in (Get-MemberNames $m $true)) {
+                    $touchesOthers = $false
+                    foreach ($n in (Get-SkillNames $m $true)) {
+                        if ($null -eq $n) { continue }
+                        $touchesOthers = $true
                         if ($slotScoped.ContainsKey($n)) { [void]$needs.Add($slotScoped[$n]); $recognised = $true; continue }
-                        foreach ($p in $castOnSkill) { if ($n.StartsWith($p, 'Ordinal')) { [void]$needs.Add('Cast'); $recognised = $true; break } }
+                        foreach ($p in $castOnSkill) { if ($n.StartsWith($p, 'Ordinal')) { [void]$needs.Add('Cast'); $castFromEquip = $true; $recognised = $true; break } }
                         foreach ($p in $aliveOnSkill) { if ($n.StartsWith($p, 'Ordinal')) { $alwaysLive = $true; $recognised = $true; break } }
                     }
-                    # Unknown is not the same as dead.
-                    if (-not $recognised) { $alwaysLive = $true }
+                    # Unknown is not the same as dead - but touching nothing but itself is not unknown.
+                    if (-not $recognised -and $touchesOthers) { $alwaysLive = $true }
                 }
                 'OnEquipGem' {
                     foreach ($n in (Get-MemberNames $m $true)) {
@@ -268,6 +304,30 @@ $essences = foreach ($gem in ($types | Where-Object { $_ -ne $gemBase -and $gemB
     }
     $supplies = if ($touchesCast -and $created.Count -gt 0) { ((Get-Capabilities $created) | Sort-Object) -join '|' } else { '' }
 
+    # An empowered cast is armed by the cast and paid out by its damage: a cast handler that
+    # reaches info.instance's damage or healing members needs that, not the cast.
+    if ($castHandler) {
+        $paidBy = New-Object System.Collections.Generic.HashSet[string]
+        $t = $gem
+        while ($null -ne $t -and $t -ne $gemBase) {
+            foreach ($s in (Get-WithNested $t)) {
+                foreach ($m in $s.GetMethods($declared)) {
+                    $names = Get-MemberNames $m $true
+                    if (-not ($names -contains $castInstance)) { continue }
+                    foreach ($n in $names) { if ($slotScoped.ContainsKey($n)) { [void]$paidBy.Add($slotScoped[$n]) } }
+                }
+            }
+            $t = $t.BaseType
+        }
+        if ($paidBy.Count -gt 0) {
+            if (-not $castFromEquip) { [void]$needs.Remove('Cast') }
+            foreach ($x in $paidBy) { [void]$needs.Add($x) }
+        }
+    }
+
+    # What it does by itself, handed to its memory whenever it fires (its parentActor is the memory).
+    $ownSupplies = ((Get-Capabilities @($gem)) | Sort-Object) -join '|'
+
     # ElementGates: everything these do in the slot sits behind one element, so nothing read above
     # makes them live anywhere else - Gem_R_Frost's empty stat holder on the hero included.
     $gate = $elementGates[$gem.Name]
@@ -278,13 +338,14 @@ $essences = foreach ($gem in ($types | Where-Object { $_ -ne $gemBase -and $gemB
         Needs = (($needs | Sort-Object) -join '|')
         AlwaysLive = $alwaysLive
         Supplies = $supplies
+        OwnSupplies = $ownSupplies
         Gate = $gate
     }
 }
 
 # --- MemoryFacts, restated -------------------------------------------------------------------
 
-$damageProse = '(?i)\bdamage\b'
+$damageProse = '(?i)(?<!\battack\s)(?<!\bability\s)\bdamage\b(?!\s+(taken|you take|reduction))'
 $damageVar   = '(?i)dmg|damage'
 $healProse   = '(?i)\bheal(s|ed|ing)?\b|lifesteal|life steal|omnivamp|regenerat|(restor|recover)\w*[^.]{0,40}\bhealth\b'
 $healVar     = '(?i)heal(?!th)'

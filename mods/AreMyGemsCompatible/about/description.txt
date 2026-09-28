@@ -6,6 +6,8 @@ Warns about an essence that can never fire in the memory it is socketed into - o
 [*]A line in the essence's tooltip saying what it is waiting for that this memory never does - including while you are dragging it over a slot, so you are told before the swap rather than after
 [/list]
 
+Essences beside it count as well. One that deals damage or heals by itself when it fires - the arrows of Essence of Sharpness, the healing of Essence of Blossoming - gives the memory that to answer to, and Essence of Sulfur or Essence of the Abyss decides the element of all of its damage.
+
 Every slot is covered: the Q/W/E/R memories, an identity memory once a shrine has given it an essence slot, and Movement memories that other mods give slots to.
 
 The mark pulses only while you are not editing your loadout, and gets out of the way of the artwork on the editing screen.

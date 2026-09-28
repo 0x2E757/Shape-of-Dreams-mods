@@ -1,3 +1,12 @@
+[h2]1.3[/h2]
+[list]
+[*]Essences beside it now count for what they do themselves when they fire: Essence of Guidance beside Essence of Blossoming or Essence of Clemency, which heal through the memory, is no longer marked, nor is Essence of Love beside those or beside Essence of Rigidity, which gives a barrier
+[*]Essence of Sulfur and Essence of the Abyss turn all of the memory's damage to Fire and to Dark, and are now taken as doing so: an essence waiting for Cold damage beside them is marked even in a memory that deals Cold damage, and Essence of Fever beside Essence of the Abyss even in one that deals Fire damage
+[*]Essences that empower the next cast now need that cast to deal damage, not only to happen: Essence of Talc, Essence of Shatter, Essence of Finality, Essence of Responsibility, Pure White, Essence of the Celestial, Heart of Gold, Essence of Overload and Essence of Rejuvenation are marked in a memory that deals none
+[*]Fixed: an essence waiting for damage was never marked in Hero's Return - the words "Attack Damage" in its description were taken for the memory dealing damage
+[*]Fixed: Essence of Frost beside Essence of Sharpness was never marked, though the arrows deal no Cold damage
+[/list]
+
 [h2]1.2[/h2]
 [list]
 [*]Essences that answer to one element are now checked: Essence of Frost and Essence of Apathy wait for Cold damage, Essence of Fever and Essence of Lava for Fire damage, and each is marked in a memory that never deals it - Essence of Frost in Incendiary Rounds is the case that was reported

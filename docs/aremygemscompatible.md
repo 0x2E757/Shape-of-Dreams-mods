@@ -124,12 +124,16 @@ from `rawDescVars` joined together. Either matching is enough.
 
 | | prose | field names |
 | --- | --- | --- |
-| damage | `\bdamage\b` | `dmg`, `damage` |
+| damage | `\bdamage\b`, not after "Attack"/"Ability" nor before "taken"/"reduction" | `dmg`, `damage` |
 | heal | `\bheal(s\|ed\|ing)?\b`, `lifesteal`, `regenerat`, `(restor\|recover)…health` | `heal(?!th)` |
 | shield | `\bbarrier\b`, `\bshield(s\|ed\|ing)?\b` | `shield`, `barrier` |
 
 The word boundaries are the whole trick and both directions cost something:
 
+- **"damage" is sometimes a stat.** Hero's Return says nothing about damage but "permanently gain
+  {2} Attack Damage", and read as dealing damage; in a fight, an on-hit essence in it never fired.
+  The word is not counted after "Attack" or "Ability" nor before "taken" or "reduction" - over the
+  shipped dump that changes Hero's Return and The Killing Flow and nothing else.
 - **`heal` without a boundary matches "maximum health"**, and every damage memory in the game
   becomes a healer. `St_E_FinalExplosion` — "sacrifice X of my maximum health" — is the plain case.
 - **The boundary alone is not enough either**, because the game says "restores Health" and
@@ -260,9 +264,19 @@ local first, `Gem_U_LastStarlight` creates against itself and then assigns
 the type does both answers all three shapes without tracing an argument back to where it came from.
 
 That alone excludes `Gem_E_Overload`, `Gem_R_Rejuvenation`, `Gem_R_Composure`, `Gem_C_Quicksilver`
-and `Gem_R_Epiphany`, which create against themselves or create nothing. `Gem_R_Rejuvenation` is
-the instructive near-miss: it does heal, and says so, but through `Gem.Heal(...).Dispatch(...)`
-with the essence as the healing actor, so the memory's `dealtHealProcessor` never fires.
+and `Gem_R_Epiphany`, which create against themselves or create nothing.
+
+**What an essence does by itself reaches the memory all the same.** This page used to say the
+opposite of `Gem_R_Rejuvenation`: that it heals through `Gem.Heal(...).Dispatch(...)`, with the essence
+as the healing actor, and so the memory's `dealtHealProcessor` never fires. That is wrong, and a
+fight showed it. A socketed essence's `parentActor` *is* the memory (`HeroSkill.EquipGem`), and
+`Actor.ProcessDealtHeal` runs the processors of every ancestor; `Actor.InvokeOnDoHeal`, and its
+damage and barrier twins, raise the event on every ancestor too. So an essence's own heal is the
+memory's heal to whatever listens there. In Teal Blade, which heals nothing, Guidance beside Blossom
+amplified every one of Blossom's heals, and Love beside it buffed the hero each time. The mod had
+marked both dead. Now each essence carries `OwnSupplies`, which is the capabilities of its own code and
+of what it creates. A sibling hands those to the memory whenever it fires itself. See **Siblings,
+settled in passes** below.
 
 ### Step two: what do the created things do?
 
@@ -301,16 +315,35 @@ level of nesting reaches `<>c__DisplayClass3_0`, whose only method constructs th
 and finds nothing whatsoever. Seven of the eighteen suppliers were invisible until the walk
 recursed.
 
-### What it still gets wrong
+### Armed by the cast, paid by its damage
 
-`Gem_R_Lava` reads as supplying damage and does not. It subscribes to
+`Gem_R_Lava` used to read as supplying damage, and it does not. It subscribes to
 `info.instance.ActorEvent_OnDealDamage` and creates its lava field from the *damage event's* actor,
 so it only ever fires in a memory that already deals damage — precisely the case where nothing
 needed reviving. Separating it means knowing that the creating code is reachable only from a damage
 subscription, which is a call-graph question rather than a name question.
 
-The consequence is bounded and falls in the quiet direction: a damage-triggered essence sharing one
-of the five no-damage memories with `Gem_R_Lava` gets no warning when it deserved one.
+The same shape covers nine essences: `Gem_C_Talc`, `Gem_C_Shatter`, `Gem_E_Omega`,
+`Gem_C_Responsibility`, `Gem_L_PureWhite`, `Gem_R_Celestial`, `Gem_L_HeartOfGold`, `Gem_E_Overload`
+and `Gem_R_Rejuvenation`. Each overrides a cast handler, and all the handler does is reach into that
+cast (`info.instance.dealtDamageProcessor.Add(...)`, `info.instance.ActorEvent_OnDealDamage += ...`)
+and wait for what it deals or heals. In a memory whose cast deals nothing they are armed on every
+cast and never pay out; in a fight, in Undo and Somersault, each spent its cooldown and did nothing.
+So the question is asked per method: a body that touches `EventInfoCast.instance` and one of the
+slot-scoped members wants that member's need, and an essence whose cast handler does that needs
+the damage or healing rather than the cast. What it creates is no exception. The Celestial's
+meteors and Pure White's shards are created through the cast, but from inside the damage handler.
+An essence that creates on the cast itself (Stillness, Last Starlight) never reaches the cast's
+damage and keeps needing only the cast.
+
+### Siblings, settled in passes
+
+A sibling gives what it creates through the cast (`Supplies`) and what it does by itself
+(`OwnSupplies`) only when it fires, and it may fire only because another sibling gave something:
+Blossom heals only when the memory deals damage, and Sharp's arrows may be what deals it. So the
+siblings are asked in passes until nothing more wakes. The essence being judged is left out: it
+cannot wake itself through a sibling it wakes. A sibling behind an element (Frost) gives nothing
+here; its element question is settled with the elements, below.
 
 ## Identity and Movement memories
 
@@ -483,6 +516,24 @@ memories. `St_D_SharedPain` copies the element of the hit it repeats — unknown
 monster's Light beam — the union includes it. (That beam is also damage the damage question does
 not know about; the damage verdict for Sneeze is not changed here.)
 
+### Two essences replace the element
+
+`Gem_C_Sulfur` and `Gem_R_Abyss` register a `dealtDamageProcessor` on the memory at priority -2000
+that sets the element of everything passing it to Fire or to Dark, and everything the memory deals
+passes it: its own hits, what a sibling creates through the cast, what a sibling deals itself. In a
+fight, Glacial Hammer beside Sulfur dealt nothing but Fire and beside Abyss nothing but Dark, and
+Frost in it never fired. The mod had added Sulfur's Fire to Hammer's Cold and said nothing. With
+one of them beside it, a gated essence is now judged against the replacement alone, plus what a
+status on the hero or the room could write. `Gem_E_Inversion` runs after them (priority -1000) and
+swaps what they wrote (Sulfur then Inversion in Teal Blade dealt only Cold). Both the written
+element and its opposite are counted, because two Inversions, which ControlledMerge allows, swap it
+back. A table (`ElementChangers.Replacers`), for the same reason `ElementGates` is one.
+
+Inversion alone is not a replacement, and the fights say so too. It swaps only what is elemental,
+so a memory's element-less hits and lingering effects keep theirs. Flaming Whip beside Inversion
+dealt 58 Cold hits and 6 Fire, and Lava beside them still made its pools, so adding both elements
+is the true answer there.
+
 ### What else can give the damage an element
 
 `SetElemental` is the one way an element is written, and outside the memories' own code it is
@@ -495,13 +546,24 @@ At the moment of the verdict the essences beside it, the hero's status effects a
 modifiers are each asked **which elements they can write** — the same constant reading, followed
 through what they create — and those are added to the memory's. So Frost beside Inversion is quiet,
 and Frost beside Sulfur is still marked: Sulfur only ever writes Fire. Anything that writes from a
-variable (Pain copying the hit's, the sigil's random pick), and any sibling that supplies damage
-through the cast, makes the answer unknown.
+variable (Pain copying the hit's, the sigil's random pick) makes the answer unknown. A sibling that
+supplies damage through the cast used to as well, and so kept quiet about Frost beside Sharpness in
+a memory with no Cold. Sharpness's arrows carry no element, which the same reading finds, and in a
+fight Frost there never fired.
 
 **Following creations matters for siblings as much as for memories.** `Gem_C_Charcoal`'s own code
 has no element in it; the projectile it fires, `Ai_Gem_C_Charcoal_Projectile`, deals Fire damage
 parented under the memory. Reading only the essence would have marked Fever beside it in a memory
 with no element, and Fever works there.
+
+**A sibling that is itself behind an element writes only once that element has arrived.** Frost's
+own Cold hit is dealt from inside its `OnDealDamage`, which answers Cold damage and nothing else -
+so two Frosts in a memory with no Cold read as each other's supply of Cold, and neither ever
+fires. With one essence of each kind this could not happen; ControlledMerge, which allows copies,
+made it visible at once. Such a sibling (one with a gate, and not always live) now counts only when
+its gate is open without it: from the memory's own elements, or from what the other siblings, the
+hero's statuses and the room write - resolved in passes, since one sibling can open another's gate.
+A memory whose elements are unknown still counts it, the quiet direction.
 
 It is asked of what a client can see. The damage processors that actually change the element are
 registered on the server, and a guest's copy of the hero carries none of them; status effects and
@@ -510,8 +572,9 @@ room modifiers are synced actors.
 ### What it adds up to
 
 A Debug build counts, at load, every essence prefab against every memory the dump knows, each pair
-on its own: **103 essences × 154 memories, 1884 of 15862 pairs dead — about one in eight — and 419 of
-them by element.** Over memories that are cast it is 928 of 13493. Frost, Apathy and Fever are each
+on its own: **103 essences × 154 memories, 1895 of 15862 pairs dead — about one in eight — and 402 of
+them by element.** Over memories that are cast it is 1072 of 13493: an essence armed by the cast and
+paid by its damage now needs a memory that deals damage. Frost, Apathy and Fever are each
 dead in about 120 of the 152 known memories, which is the honest figure: the essences' own
 descriptions say "when this Memory deals Cold damage", and most memories deal damage of no element.
 
@@ -649,6 +712,35 @@ dead in a memory that deals no damage, but its `fireEffectAmpFlat` stat bonus is
 splits the same way. Marking those would put the badge on half a loadout and drown the twenty-five
 that are genuinely inert.
 
+## Checked in a fight
+
+Reading code settles what *can* happen, and it had been wrong in both directions. DevTools can now
+watch what does happen: `/cheat/monster` puts standing targets in the room, and
+`/debug/essences` counts what every worn essence and memory actually did (its `Gem.NotifyUse`
+calls, and every hit, heal, barrier, kill and instance by it or by what it created). See
+[devtools.md](devtools.md). The harness that drives them builds a loadout and fights three rounds:
+casting and attacking, taking hits, and finishing off weak monsters. It then compares each essence's
+verdict with what it did.
+
+Seventy loadouts, 256 essences, chosen from the essences' own wording: forty plain and thirty
+picked for awkward triggers. Before the changes on this page, 215 agreed with the fight. After
+them, 18 more agree, including all five false warnings (Guidance and Love beside Blossom,
+Clemency and Rigidity). None that agreed stopped agreeing. The same check over a sweep of every
+essence in a fitting memory turned no essence that fired into a warned one.
+
+What the fights still leave open is not a wrong verdict so much as an unproven one:
+
+- **Chance and circumstance.** Mortality's execute, Ricochet's bounce, Smite's ignite (which is
+  what Fever and Lava beside it wait for), and Predation's Hunters. A short fight can miss all of
+  them. Ricochet's healing half needs another ally to bounce to, which solo play never has.
+- **Bleak alone in Glacial Stomp.** The stomp stuns and chills *after* its hit lands, so it never
+  amplifies its own. The same Bleak beside another memory that stuns is amplified by that.
+- **Undo.** Its extra damage is dealt by `Se_E_Rewind_Damage` as it is destroyed, after the effect
+  above it is gone, so it never reaches Undo's events. Undo landed no hit of its own in any fight,
+  and an on-hit essence in it never fired. Its description still reads as damage.
+- **Divine Faith** keeps the Maximum Health of stacks it already has in any memory, so it is not
+  dead where the memory deals no damage, only stuck.
+
 ## Verifying the rules
 
 The classification runs outside the game as well as in it, which is how the rules above were
@@ -664,10 +756,10 @@ applies the same regexes to `memories.json`, reads every identity memory's code 
 
 It opens with the identity audit — each identity's damage, healing and barrier as the code finds
 them, in capitals, and in lower case where only the prose claims one — and then prints the numbers
-that have to hold. At the time of writing they are 105 essences with 63 entirely slot-scoped (62
-before Frost stopped reading as live), 152 known memories (128 Q/W/E/R, 15 identity, 9 Movement),
-19 essences that hand a capability to their memory, and 1647 warned pairs of which 437 are by
-element; with `-Pairs` it names every supplier and what it supplies. It re-measures a changed
+that have to hold. At the time of writing they are 105 essences with 64 entirely slot-scoped (62
+before Frost stopped reading as live, 63 before Finality did), 152 known memories (128 Q/W/E/R,
+15 identity, 9 Movement), 16 essences that hand a capability to their memory through a cast alone,
+and 1712 warned pairs of which 420 are by element; with `-Pairs` it names every supplier and what it supplies. It re-measures a changed
 rule against every essence in the game in a few seconds instead of by playing, which is how each
 of the supplier bugs above was found: none of them showed up as a wrong number in the other two
 counts.
@@ -677,8 +769,8 @@ around — so a rule changed in one has to be changed in the other, and the tabl
 disagreement visible. Four things it cannot see the way the game does:
 
 - A memory's elements beyond its description and tags. The game adds its code's constants and its
-  prefabs' elements, which add nothing but Sneeze's Light beam. The script counts 437 pairs dead by
-  element where the game's own count is 419; the two are not counted over the same sets - the game
+  prefabs' elements, which add nothing but Sneeze's Light beam. The script counts 420 pairs dead by
+  element where the game's own count was 419 before the rules above changed; the two are not counted over the same sets - the game
   has 103 essence prefabs to the script's 105 types, 154 memories to its 152 known, and silences
   whatever `enableStatBonus` makes live - so the figures are close rather than equal. Siblings,
   statuses and the room are not modelled either.

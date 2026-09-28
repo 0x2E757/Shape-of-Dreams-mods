@@ -267,6 +267,14 @@ namespace AreMyGemsCompatible
             var added = ElementSet.None;
             var owner = skill.owner;
 
+            // Siblings that are themselves behind an element write only once that element has
+            // reached the memory: Essence of Frost's own Cold hit is dealt from inside its
+            // OnDealDamage, which answers Cold damage and nothing else. Two of them in a memory
+            // with no Cold each read as the other's supply of Cold, and neither ever fires - so
+            // such a sibling counts only once its element is there without it, from the memory's
+            // own damage or from what the other siblings write. That can take more than one pass.
+            // (One of each kind made this unreachable until ControlledMerge allowed copies.)
+            var gated = new List<Gem>();
             if (owner != null && owner.Skill != null && owner.Skill.gems != null)
             {
                 foreach (var pair in owner.Skill.gems)
@@ -274,14 +282,63 @@ namespace AreMyGemsCompatible
                     var other = pair.Value;
                     if (other == null || other == gem || other.skill != skill) continue;
 
-                    // Whatever a sibling makes the memory deal, through its cast, is of no known
-                    // element.
-                    if ((GemTriggers.Of(other).Supplies & SlotNeed.Damage) != SlotNeed.None) return null;
+                    var profile = GemTriggers.Of(other);
+
+                    // Whatever a sibling makes the memory deal carries the element its own code
+                    // and prefabs give it, which Add reads below - Essence of Sharpness's arrows
+                    // carry none. (This used to make the whole answer unknown, and so kept quiet
+                    // about Frost beside Sharpness in a memory with no Cold; watched in a fight,
+                    // Frost there never fired.)
+                    if (profile.Gate != ElementSet.None && !profile.AlwaysLive)
+                    {
+                        gated.Add(other);
+                        continue;
+                    }
 
                     if (!Add(ref added, other.GetType())) return null;
                 }
             }
 
+            var outside = OutsideFor(skill);
+            if (!outside.HasValue) return null;
+            added |= outside.Value;
+
+            if (gated.Count > 0)
+            {
+                var own = MemoryElements.For(skill, MemoryData.Get(skill));
+
+                // A memory whose elements are unknown cannot say whether a gate opens; the
+                // sibling counts, as it did before, which is the quiet direction.
+                if (!own.HasValue)
+                {
+                    foreach (var other in gated)
+                        if (!Add(ref added, other.GetType())) return null;
+                    return added;
+                }
+
+                bool opened = true;
+                while (opened && gated.Count > 0)
+                {
+                    opened = false;
+                    for (int i = gated.Count - 1; i >= 0; i--)
+                    {
+                        if (((own.Value | added) & GemTriggers.Of(gated[i]).Gate) == ElementSet.None) continue;
+                        if (!Add(ref added, gated[i].GetType())) return null;
+                        gated.RemoveAt(i);
+                        opened = true;
+                    }
+                }
+            }
+
+            return added;
+        }
+
+        // What statuses on the hero and modifiers in the room could write into any of the hero's
+        // damage, or null if that cannot be known.
+        public static ElementSet? OutsideFor(SkillTrigger skill)
+        {
+            var added = ElementSet.None;
+            var owner = skill.owner;
             if (owner != null && owner.Status != null)
             {
                 foreach (var effect in owner.Status.statusEffects)
@@ -290,8 +347,71 @@ namespace AreMyGemsCompatible
 
             foreach (var modifier in UnityEngine.Object.FindObjectsByType<RoomModifierBase>(FindObjectsSortMode.None))
                 if (modifier != null && !Add(ref added, modifier.GetType())) return null;
-
             return added;
+        }
+
+        // **Two essences replace an element rather than add one.** Essence of Sulfur and Essence
+        // of the Abyss register a dealtDamageProcessor on the memory that sets the element of
+        // everything passing it - Fire, Dark - and everything the memory deals passes it: its own
+        // hits, what a sibling creates through the cast, what a sibling deals itself (a socketed
+        // essence's parentActor is the memory, and Actor.ProcessDealtDamage runs the processors
+        // of every ancestor). Watched in a fight: Glacial Hammer beside Sulfur dealt nothing but
+        // Fire, beside Abyss nothing but Dark, and Frost in it never fired.
+        //
+        // Inversion, beside one of them, swaps what it wrote: its processor is registered at
+        // -1000, theirs at -2000, so it runs after (Sulfur then Inversion in Teal Blade dealt only
+        // Cold). Both the written element and its opposite are counted all the same, because two
+        // Inversions - which ControlledMerge allows - swap it back. Alone, Inversion is not a
+        // replacement: it swaps only what is elemental, and a memory's element-less hits and its
+        // lingering effects keep what they have - in a fight, Flaming Whip beside Inversion still
+        // dealt some Fire, and Lava beside them both still made its pools.
+        //
+        // A table, like ElementGates, because what makes these two different is that their
+        // processor is unconditional, which is the shape of a branch rather than a member name.
+        private static readonly Dictionary<string, ElementSet> Replacers = new Dictionary<string, ElementSet>
+        {
+            ["Gem_C_Sulfur"] = ElementSet.Fire,
+            ["Gem_R_Abyss"] = ElementSet.Dark,
+        };
+
+        private const string Inverter = "Gem_E_Inversion";
+
+        // The elements the memory's damage is turned into by a sibling, or null when no sibling
+        // replaces them.
+        public static ElementSet? ReplacedFor(Gem gem, SkillTrigger skill)
+        {
+            var owner = skill.owner;
+            if (owner == null || owner.Skill == null || owner.Skill.gems == null) return null;
+
+            var replaced = ElementSet.None;
+            bool any = false, inverts = false;
+            foreach (var pair in owner.Skill.gems)
+            {
+                var other = pair.Value;
+                if (other == null || other == gem || other.skill != skill) continue;
+                string name = other.GetType().Name;
+                ElementSet element;
+                if (Replacers.TryGetValue(name, out element))
+                {
+                    replaced |= element;
+                    any = true;
+                }
+                else if (name == Inverter) inverts = true;
+            }
+
+            if (!any) return null;
+            if (inverts) replaced |= Inverted(replaced);
+            return replaced;
+        }
+
+        private static ElementSet Inverted(ElementSet set)
+        {
+            var result = ElementSet.None;
+            if ((set & ElementSet.Fire) != ElementSet.None) result |= ElementSet.Cold;
+            if ((set & ElementSet.Cold) != ElementSet.None) result |= ElementSet.Fire;
+            if ((set & ElementSet.Light) != ElementSet.None) result |= ElementSet.Dark;
+            if ((set & ElementSet.Dark) != ElementSet.None) result |= ElementSet.Light;
+            return result;
         }
 
         private static bool Add(ref ElementSet into, Type type)

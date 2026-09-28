@@ -40,6 +40,16 @@ namespace AreMyGemsCompatible
         // heal or shield because of an essence beside it. See Verdict.
         public SlotNeed Supplies;
 
+        // What this essence does by itself - its own DealDamage, Heal(...).Dispatch, the barrier
+        // of a status effect it creates - and so hands to the memory whenever it fires. A socketed
+        // essence's parentActor *is* the memory (HeroSkill.EquipGem), and Actor.ProcessDealtHeal
+        // and Actor.InvokeOnDoHeal, like their damage and barrier twins, walk up parentActor: so
+        // Essence of Blossoming's heal is amplified by Essence of Guidance beside it, and Essence
+        // of Love reacts to it, exactly as if the memory had healed. Watched in a fight: Guidance
+        // beside Blossom in Teal Blade, which heals nothing itself, amplified every one of
+        // Blossom's heals. Counts only while the essence itself fires - see Verdict.
+        public SlotNeed OwnSupplies;
+
         // The one element this essence's damage trigger answers to, or None for any damage at
         // all. See ElementGates.
         public ElementSet Gate;
@@ -202,6 +212,8 @@ namespace AreMyGemsCompatible
         private static GemProfile Build(Type gemType)
         {
             var profile = default(GemProfile);
+            bool castHandler = false;
+            var fromEquip = SlotNeed.None;
 
             // Up to but not including Gem itself: the base class declares all four virtuals empty,
             // and a body that does nothing is not a subscription to anything.
@@ -218,10 +230,13 @@ namespace AreMyGemsCompatible
                         case "OnCastComplete":
                         case "OnCastCompleteBeforePrepare":
                             profile.Needs |= SlotNeed.Cast;
+                            castHandler = true;
                             break;
 
                         case "OnEquipSkill":
+                            var before = profile.Needs;
                             ReadEquipSkill(method, gemType, ref profile);
+                            fromEquip |= profile.Needs & ~before;
                             break;
 
                         case "OnEquipGem":
@@ -232,6 +247,30 @@ namespace AreMyGemsCompatible
             }
 
             profile.Supplies = ReadSupplies(gemType);
+
+            // **An empowered cast is armed by the cast and paid out by its damage.** Essence of
+            // Talc, Shatter, Finality, Responsibility, Pure White, the Celestial, Heart of Gold,
+            // Overload and Rejuvenation all override a cast handler, and all it does is reach into
+            // that cast - `info.instance.dealtDamageProcessor.Add(...)`,
+            // `info.instance.ActorEvent_OnDealDamage += ...` - and wait for what the cast then deals
+            // or heals. In a memory whose cast deals nothing they are armed and never pay: watched
+            // in Undo and Mass Protection, each spent its cooldown on every cast and did nothing.
+            // So an essence whose cast handler reaches the cast's own damage or healing needs that
+            // damage or healing, not the cast.
+            //
+            // What the essence creates is no exception: the Celestial and Pure White create
+            // through the cast, but from inside the handler they hang on the cast's damage, so
+            // their meteors and shards come only from a cast that hits. An essence that creates on
+            // the cast itself - Stillness, Last Starlight - never reaches the cast's damage and is
+            // not touched by this.
+            if (castHandler)
+            {
+                var paidBy = CastPaidBy(gemType);
+                if (paidBy != SlotNeed.None)
+                    profile.Needs = (profile.Needs & ~SlotNeed.Cast) | paidBy | (fromEquip & SlotNeed.Cast);
+            }
+
+            profile.OwnSupplies = ReadCapabilities(new List<Type> { gemType });
 
             // An essence in the element table is there because everything it does in the slot
             // sits behind that element, so nothing read out of its code makes it live anywhere
@@ -299,6 +338,31 @@ namespace AreMyGemsCompatible
 
             if (!touchesCast || created.Count == 0) return SlotNeed.None;
             return ReadCapabilities(created);
+        }
+
+        // What of the cast's own doing an essence waits for: the needs of every member it reaches
+        // on EventInfoCast.instance - asked per method, since the reach is `info.instance.X` in
+        // one body, and in the essence and everything nested in it, since a lambda or a coroutine
+        // is where it usually sits.
+        private static SlotNeed CastPaidBy(Type gemType)
+        {
+            var found = SlotNeed.None;
+            foreach (var type in Scanned(gemType))
+            {
+                foreach (var method in type.GetMethods(Declared))
+                {
+                    bool cast = false;
+                    var needs = SlotNeed.None;
+                    foreach (var name in MemberNames(method, gemType))
+                    {
+                        if (name == CastInstance) cast = true;
+                        SlotNeed need;
+                        if (SlotScoped.TryGetValue(name, out need)) needs |= need;
+                    }
+                    if (cast) found |= needs;
+                }
+            }
+            return found;
         }
 
         // What a set of created types ends up doing to somebody, following each one up its base
@@ -432,11 +496,14 @@ namespace AreMyGemsCompatible
 
         private static void ReadEquipSkill(MethodBase method, Type gemType, ref GemProfile profile)
         {
-            var names = MemberNames(method, gemType);
             bool recognised = false;
+            bool touchesOthers = false;
 
-            foreach (var name in names)
+            foreach (var name in SkillMemberNames(method, gemType))
             {
+                if (name == null) continue;
+                touchesOthers = true;
+
                 SlotNeed need;
                 if (SlotScoped.TryGetValue(name, out need))
                 {
@@ -452,15 +519,59 @@ namespace AreMyGemsCompatible
                 if (StartsWithAny(name, AlwaysLiveOnSkill))
                 {
                     profile.AlwaysLive = true;
+                    Because(gemType, "OnEquipSkill reaches " + name);
                     recognised = true;
                 }
+                else if (!recognised) Because(gemType, "OnEquipSkill reaches " + name + ", which is on no list");
             }
 
             // An override that reaches for something not on either list is doing something this
             // mod does not understand. Unknown is not the same as dead, and the notes on this mod
             // are emphatic that getting it wrong in the loud direction is worse than saying
             // nothing, so an unrecognised override silences the essence.
-            if (!recognised) profile.AlwaysLive = true;
+            //
+            // One that touches nothing but the essence's own state is not that: Essence of
+            // Finality's OnEquipSkill only zeroes its own charge and number display, and reading
+            // it as "unknown" made it live everywhere - in a fight, in memories that deal no
+            // damage, it armed on every cast and never amplified anything.
+            if (!recognised && touchesOthers) profile.AlwaysLive = true;
+        }
+
+        // MemberNames, less what is the essence's own business: its fields, its properties
+        // (numberDisplay, isServer, a SyncVar's generated setter) and the base call it chains to.
+        // Those come back as null, so that a body made of nothing else reads as touching nothing.
+        // Any other method, even one the essence inherits, still counts - CreateStatusEffect is
+        // an Actor method and may well be a hook on the hero.
+        private static IEnumerable<string> SkillMemberNames(MethodBase method, Type gemType)
+        {
+            foreach (var operand in Operands(method, gemType))
+            {
+                // Declared by Gem or below it, never by Actor and up: dealtDamageProcessor is an
+                // Actor field, and reached on the memory it is the whole point.
+                var field = operand as FieldInfo;
+                if (field != null)
+                {
+                    if (IsGemDeclared(field.DeclaringType))
+                    {
+                        yield return null;
+                        continue;
+                    }
+                    yield return field.Name;
+                    if (field.DeclaringType != null) yield return field.DeclaringType.Name + "." + field.Name;
+                    continue;
+                }
+
+                var called = operand as MethodBase;
+                if (called == null) continue;
+                bool accessor = called.Name.StartsWith("get_", StringComparison.Ordinal) ||
+                                called.Name.StartsWith("set_", StringComparison.Ordinal);
+                // Something being made is nothing yet - a delegate, a SkillBonus, the Nullable<int>
+                // behind `numberDisplay = 0` - and whatever it is handed to is a call of its own.
+                bool made = called is ConstructorInfo;
+                bool own = (IsGemDeclared(called.DeclaringType) && (accessor || called.Name == method.Name)) ||
+                           Array.IndexOf(NetworkFlags, called.Name) >= 0 || made;
+                yield return own ? null : called.Name;
+            }
         }
 
         private static void ReadEquipGem(MethodBase method, Type gemType, ref GemProfile profile)
@@ -475,10 +586,37 @@ namespace AreMyGemsCompatible
                 if (StartsWithAny(name, AlwaysLiveOnHero))
                 {
                     profile.AlwaysLive = true;
+                    Because(gemType, "OnEquipGem reaches " + name);
                     return;
                 }
             }
         }
+
+        // Why an essence reads as live in any memory, for the Debug build's own questions:
+        // GemTriggers.WhyAlive("Gem_E_Omega") through DevTools' /reflect/call.
+        private static readonly Dictionary<Type, string> Reasons = new Dictionary<Type, string>();
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private static void Because(Type gemType, string reason)
+        {
+            if (!Reasons.ContainsKey(gemType)) Reasons[gemType] = reason;
+        }
+
+        public static string WhyAlive(string typeName)
+        {
+            foreach (var pair in Reasons)
+                if (pair.Key.Name == typeName) return pair.Value;
+            return null;
+        }
+
+        // The guards every server-side override opens with, and what a SyncVar's generated setter
+        // does inside - Essence of Finality zeroes one in OnEquipSkill.
+        private static readonly string[] NetworkFlags =
+        {
+            "get_isServer", "get_isClient", "get_isValid", "get_isActive", "GeneratedSyncVarSetter",
+        };
+
+        private static bool IsGemDeclared(Type type) => type != null && typeof(Gem).IsAssignableFrom(type);
 
         private static bool StartsWithAny(string name, string[] prefixes)
         {
