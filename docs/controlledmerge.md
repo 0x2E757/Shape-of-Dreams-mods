@@ -1,5 +1,7 @@
 # ControlledMerge
 
+![Two copies of Essence of Lethality in one memory, the tooltip showing the cut value and why](../images/controlledmerge-copies.jpg)
+
 Picking up an essence you already wear no longer merges it into the one you have. It goes to your
 hand, and you choose a slot for it the way you would for any new essence: an empty slot keeps both,
 and the slot of the one you have merges them. The same essence can then be worn more than once —
@@ -63,8 +65,10 @@ same essence sits in it, with a higher quality. So the server sends the slot aga
 (`HeroSkill.OnGemChanged` → `OnLocalHeroGemChanged`), which puts the right essence back.
 
 While an essence is in hand, the tooltip of a slot holding one of its kind says what choosing it
-would do: *Choosing this slot merges them: quality from 140% to 170%.* Only the host's tooltip says
-so: a guest's copy cannot know whether the host has the mod.
+would do: *Choosing this slot merges them: quality from 140% to 170%.* A guest's tooltip says so as well,
+once the host's settings have reached it (see **In co-op**).
+
+![A second Essence of Lethality in hand over the slot of the first, the tooltip saying the two merge to 200%](../images/controlledmerge-merge.jpg)
 
 **Two copies already worn merge by dragging one onto the other** in the edit screen. Every drag
 from socket to socket ends in `HeroSkill.CmdSwapSlotGem`, and `HandleGemToGem` sends it as
@@ -419,6 +423,11 @@ description then says what the essence really does, and a line under it says why
 
 *Weakened to 70%: equipped in 2 memories (−30%).*
 
+What is left in all carries its tenth when it has one — two copies in Q and one in W leave each in Q at
+*52.5%*, which a whole number would have rounded to the even 52 — written with the language's own
+decimal separator. The wording ("equipped in" or, when AreMyGemsCompatible decides which copies
+count, "used in") follows the host's settings, like the numbers.
+
 **It hooks `DoInGameTooltip`, not `OnSetup`, because AreMyGemsCompatible hooks `OnSetup`** —
 and two mods on one method broke the other one's warning after any reload of the mods. Harmony
 2.3.6 finds a patch method again by its module's MVID and token, taking the *first* loaded module
@@ -447,6 +456,16 @@ that mode the number is rendered a second time with the cut held off (`Scope.Sup
 every cutting path honours), and the uncut formula is shown with each cut after it, in the order the line lists them:
 *increased by 60%⌃ × 70% × 75%*. A number the cut does not reach renders the same both times and is left
 alone.
+
+**A number made from a cut value through a curve is shown as where it goes.** Efficiency's
+*reducing its cooldown by 26%* is `1 − 1/(1 + haste/100)`: the haste is what is cut, and at 52.5% the
+reduction is 16%, not 26% × 52.5% = 13.7% — which the formula above would have implied. Such a number
+is told by the cut rendering not being the uncut one times the factor, to within the rounding both
+were drawn with, and is shown as *26%⌃ → 16%* instead. The haste beside it stays
+*36⌃ × 70% × 75%*. The same goes for every `reducedRatio` (Lightweight, Paranoia), Direness's
+`maxReducedRatio`, Epiphany's `refundCooldownRatio` and Abyss's chance.
+
+![Essence of Efficiency cut by both rules, with the details key held: the haste times each cut, the cooldown reduction as where it goes](../images/controlledmerge-cuts.jpg)
 
 ## In co-op
 

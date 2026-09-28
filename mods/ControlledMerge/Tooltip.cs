@@ -253,6 +253,12 @@ namespace ControlledMerge
     // that uncut formula is shown with each cut after it, in the order the line under the
     // description lists them: " 60%<sprite=5> x 70% x 75%". A number the cut does not reach
     // renders the same both times and is left as it is.
+    //
+    // **Unless the number is not the value cut but something made from it.** Efficiency's
+    // "reducing its cooldown by 26%" is 1 - 1/(1 + haste/100): the haste is what is cut, and the
+    // cooldown reduction follows through the curve - 16% at 52.5%, not 26% x 52.5% = 13.7%. Such a
+    // number is told by the cut one not being the uncut one times the factor, to within the
+    // rounding both were drawn with, and is shown as where it goes instead: " 26%<sprite=5> -> 16%".
     [HarmonyPatch(typeof(DewLocalization), nameof(DewLocalization.EvaluateAndRenderExpression))]
     internal static class FormulaFactor
     {
@@ -277,7 +283,48 @@ namespace ControlledMerge
             }
 
             if (uncut == __result) return;
+
+            if (!Scaled(uncut, __result, Tooltip.Scope.Factor, out string cutNumber))
+            {
+                __result = uncut.TrimEnd() + " " + Localization.Paint("\u2192 " + cutNumber) + " ";
+                return;
+            }
             __result = uncut.TrimEnd() + " " + Localization.Paint(Localization.Formula(Tooltip.Scope.Share)) + " ";
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex Number =
+            new System.Text.RegularExpressions.Regex(@"(?<![\w#=])(\d+(?:[.,]\d+)?)(%?)");
+
+        // Whether the cut rendering is the uncut one times factor, judged on the first number of
+        // each. cutNumber is that number as drawn, with its percent sign. When either has no number
+        // to read, the formula is kept - there is nothing to show instead.
+        private static bool Scaled(string uncut, string cut, float factor, out string cutNumber)
+        {
+            cutNumber = null;
+            var a = Number.Match(StripTags(uncut));
+            var b = Number.Match(StripTags(cut));
+            if (!a.Success || !b.Success) return true;
+
+            cutNumber = b.Value;
+            if (!TryRead(a.Groups[1].Value, out double before) || !TryRead(b.Groups[1].Value, out double after)) return true;
+
+            // Both were drawn rounded: the cut one to its own last digit, the uncut one to its own,
+            // which the factor then shrinks.
+            double unit = Unit(b.Groups[1].Value);
+            double tolerance = unit * 0.5 + Unit(a.Groups[1].Value) * 0.5 * factor + 1e-4;
+            return System.Math.Abs(after - before * factor) <= tolerance;
+        }
+
+        private static string StripTags(string text) => System.Text.RegularExpressions.Regex.Replace(text, "<[^>]*>", " ");
+
+        private static bool TryRead(string text, out double value) =>
+            double.TryParse(text.Replace(',', '.'), System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out value);
+
+        private static double Unit(string text)
+        {
+            int dot = text.IndexOfAny(new[] { '.', ',' });
+            return dot < 0 ? 1.0 : System.Math.Pow(10, -(text.Length - dot - 1));
         }
     }
 }

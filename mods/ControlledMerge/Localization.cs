@@ -275,9 +275,12 @@ namespace ControlledMerge
 
         // Get, but the ".used" wording when AreMyGemsCompatible decides what counts and the
         // current language has one - falling back to English's only when the plain key would too.
+        // What counts is the host's to decide (HostSettings), so it is the host's copy of that mod
+        // that chooses the wording, on a guest's screen as on the host's.
         public static string Word(string key)
         {
-            if (Fit.Available)
+            bool decides = HostSettings.TryGet(out var settings) ? settings.LeavesOutDeadCopies : Fit.Available;
+            if (decides)
             {
                 string language = Shared.LanguageTable.CurrentLanguage;
                 if (Strings.TryGetValue(language, out var table) && table.TryGetValue(key + Used, out var used)) return used;
@@ -289,7 +292,7 @@ namespace ControlledMerge
 
         public static string Line(Share share)
         {
-            int left = Percent(share.Factor);
+            string left = Total(share.Factor);
             int memoryCut = 100 - Percent(share.MemoryFactor);
             int copyCut = 100 - Percent(share.CopyFactor);
 
@@ -332,5 +335,16 @@ namespace ControlledMerge
         public static string Paint(string text) => "<color=#ffc46b>" + text + "</color>";
 
         private static int Percent(float factor) => Mathf.RoundToInt(factor * 100f);
+
+        // What is left in all, with its tenth when it has one: 0.7 x 0.75 is 52.5%, which a whole
+        // number would round to the even 52. The single cuts are always whole.
+        private static string Total(float factor)
+        {
+            double value = System.Math.Round(factor * 100.0, 1, System.MidpointRounding.AwayFromZero);
+            System.Globalization.CultureInfo culture;
+            try { culture = System.Globalization.CultureInfo.GetCultureInfo(Shared.LanguageTable.CurrentLanguage); }
+            catch (System.Exception) { culture = System.Globalization.CultureInfo.InvariantCulture; }
+            return value.ToString("0.#", culture);
+        }
     }
 }
